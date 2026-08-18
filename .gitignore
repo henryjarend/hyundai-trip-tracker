@@ -1,0 +1,8 @@
+node_modules/
+dist/
+*.log
+
+# Secrets — these hold the Bluelink password and PIN. Never commit.
+.env
+.env.*
+!.env.example

@@ -1,0 +1,28 @@
+{
+  "name": "hyundai-trip-tracker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "server",
+    "web"
+  ],
+  "scripts": {
+    "migrate": "npm run -w server migrate",
+    "poll:once": "npm run -w server poll:once",
+    "poll": "npm run -w server poll",
+    "api": "npm run -w server api",
+    "dev:web": "npm run -w web dev",
+    "build": "npm run -w web build && npm run -w server build",
+    "typecheck": "npm run -w server typecheck && npm run -w web typecheck",
+    "test": "npm run -w server test",
+    "stack:up": "podman-compose down --remove-orphans || true && podman-compose up -d --build",
+    "stack:down": "podman-compose down --remove-orphans",
+    "stack:logs": "podman-compose logs -f poller",
+    "stack:status": "podman exec hyundai-trip-tracker_db_1 psql -U postgres -d hyundai -c \"select started_at, ok, trips_seen, trips_inserted, error from poll_runs order by started_at desc limit 5;\"",
+    "geonames:load": "npm run -w server geonames:load"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
+  }
+}
