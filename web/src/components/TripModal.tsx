@@ -33,6 +33,24 @@ function LocationBlock({ label, location }: { label: string; location: TripLocat
       ? `${coords} · nearest town is ${location.place_distance_miles.toFixed(1)} mi away`
       : coords;
 
+  // A requested fix and a volunteered one are different grades of evidence, so the
+  // reader gets to know which this was.
+  const requested = location.source === 'findMyCar';
+  const sourceTitle = requested
+    ? 'Requested from Hyundai (findMyCar) at a moment of our choosing'
+    : "Taken from a status snapshot — whatever position the car last volunteered";
+
+  // How old the fix is only matters when time is all that ties it to the trip. A fix
+  // taken at the trip's own odometer reading is where the car sat, and staleness says
+  // nothing about it: the odometer would have moved if the car had.
+  const proven = location.basis === 'odometer';
+  const side = label.startsWith('Start') ? 'before' : 'after';
+  const hint = proven
+    ? ` · parked here${location.minutes_away === 0 ? '' : `, read ${location.minutes_away} min ${side}`}`
+    : location.minutes_away === 0
+      ? ' · at the trip boundary'
+      : ` · ${location.minutes_away} min ${side}`;
+
   return (
     <div className="detail-row">
       <span className="detail-label">{label}</span>
@@ -45,10 +63,18 @@ function LocationBlock({ label, location }: { label: string; location: TripLocat
         >
           {linkText}
         </a>
-        <span className="detail-hint">
-          {location.minutes_away === 0
-            ? ' · at the trip boundary'
-            : ` · ${location.minutes_away} min ${label.startsWith('Start') ? 'before' : 'after'}`}
+        <span
+          className="detail-hint"
+          title={
+            proven
+              ? 'The odometer at this fix matches the trip, so the car had not moved in between'
+              : 'Only the nearest reading — the car may have been anywhere along the route'
+          }
+        >
+          {hint}
+        </span>
+        <span className={`source-tag ${requested ? 'source-gps' : 'source-cached'}`} title={sourceTitle}>
+          {requested ? 'GPS fix' : 'cached'}
         </span>
       </span>
     </div>
@@ -136,15 +162,19 @@ export function TripModal({ tripId, onClose }: Props) {
             </section>
 
             <section>
-              <h3>Approximate location</h3>
+              <h3>Location</h3>
               <p className="section-note">
-                Hyundai's trip data contains no coordinates. These are the closest
-                readings the poller took around the trip, so treat them as rough.
-                Town names come from a local GeoNames database — run{' '}
+                Hyundai's trip data contains no coordinates, so these come from
+                positions the poller recorded around the trip. <em>Parked here</em>
+                means the odometer at that reading matches the trip's, which proves the
+                car had not moved in between; anything else is only the nearest reading
+                and may be somewhere along the route. A <em>GPS fix</em> was requested
+                directly; <em>cached</em> means the car volunteered that position with
+                its status. Town names come from a local GeoNames database — run{' '}
                 <code>npm run geonames:load</code> if they're missing.
               </p>
-              <LocationBlock label="Start (nearest before)" location={trip.startLocation} />
-              <LocationBlock label="End (nearest after)" location={trip.endLocation} />
+              <LocationBlock label="Start" location={trip.startLocation} />
+              <LocationBlock label="End" location={trip.endLocation} />
             </section>
 
             <section>
