@@ -40,6 +40,21 @@ export const config = {
   utcOffset: env('HYUNDAI_UTC_OFFSET', '-5'),
   port: intEnv('PORT', 3000),
   debugHttp: env('DEBUG_HTTP', '0') === '1',
+
+  /**
+   * findMyCar is rate limited, so location fetching is opt-out and heavily
+   * throttled. Trips are never affected by any of this — a skipped or refused
+   * position fetch is not a failed poll.
+   */
+  locationEnabled: env('LOCATION_ENABLED', '1') === '1',
+  /** Floor between fixes while the car is idle. */
+  locationIntervalMinutes: intEnv('LOCATION_INTERVAL_MINUTES', 60),
+  /** Shorter floor while the engine is running — that is when position changes. */
+  locationActiveIntervalMinutes: intEnv('LOCATION_ACTIVE_INTERVAL_MINUTES', 10),
+  /** First backoff step after an HT_534 refusal; doubles per consecutive failure. */
+  locationBackoffMinutes: intEnv('LOCATION_BACKOFF_MINUTES', 60),
+  /** Ceiling for that doubling, so backoff cannot run away to days. */
+  locationBackoffMaxMinutes: intEnv('LOCATION_BACKOFF_MAX_MINUTES', 720),
 };
 
 export interface Credentials {

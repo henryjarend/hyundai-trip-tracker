@@ -1,7 +1,12 @@
 /** All database reads and writes. */
 import { query } from './pool.ts';
 import { nearestPlace } from '../geocode.ts';
-import type { Trip, Vehicle, VehicleStatusSnapshot } from '../hyundai/types.ts';
+import type {
+  Trip,
+  Vehicle,
+  VehiclePosition,
+  VehicleStatusSnapshot,
+} from '../hyundai/types.ts';
 
 export async function upsertVehicle(vehicle: Vehicle, accountId: string): Promise<void> {
   await query(
@@ -136,8 +141,9 @@ export async function insertStatusSnapshot(
   const { rowCount } = await query(
     `INSERT INTO vehicle_status_snapshots (
        vin, synced_at, soc_percent, ev_range_miles, charging, plug_type,
-       charge_power, odometer_miles, latitude, longitude, locked, battery_12v, raw
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+       charge_power, odometer_miles, latitude, longitude, locked, battery_12v,
+       engine_running, raw
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
      ON CONFLICT (vin, synced_at) DO NOTHING`,
     [
       vin,
@@ -152,10 +158,119 @@ export async function insertStatusSnapshot(
       snapshot.longitude,
       snapshot.locked,
       snapshot.battery12v,
+      snapshot.engineRunning,
       JSON.stringify(snapshot.raw),
     ],
   );
 
+  return rowCount ?? 0;
+}
+
+export interface StoredStatus {
+  synced_at: Date;
+  engine_running: boolean | null;
+  charging: boolean | null;
+  plug_type: string | null;
+  odometer_miles: number | null;
+  soc_percent: number | null;
+}
+
+/**
+ * The most recent stored snapshot, used as the "before" side of transition
+ * detection. Read before the new snapshot is inserted, or the comparison is
+ * against itself.
+ */
+export async function latestStatusSnapshot(vin: string): Promise<StoredStatus | null> {
+  const { rows } = await query<StoredStatus>(
+    `SELECT synced_at, engine_running, charging, plug_type, odometer_miles, soc_percent
+     FROM vehicle_status_snapshots
+     WHERE vin = $1
+     ORDER BY synced_at DESC
+     LIMIT 1`,
+    [vin],
+  );
+  return rows[0] ?? null;
+}
+
+export type VehicleEventKind =
+  | 'engine_on'
+  | 'engine_off'
+  | 'moved'
+  | 'charge_start'
+  | 'charge_stop'
+  | 'plugged_in'
+  | 'unplugged';
+
+export interface VehicleEvent {
+  kind: VehicleEventKind;
+  /** The `synced_at` of the snapshot that revealed the change. */
+  observedAt: string | null;
+  previous: unknown;
+  current: unknown;
+}
+
+/**
+ * Records inferred transitions. Duplicates are dropped by the unique constraint, so
+ * re-observing an unchanged snapshot is a no-op and this is safe to call every poll.
+ * Returns how many rows actually landed.
+ */
+export async function recordVehicleEvents(
+  vin: string,
+  events: VehicleEvent[],
+): Promise<number> {
+  let recorded = 0;
+  for (const event of events) {
+    const { rowCount } = await query(
+      `INSERT INTO vehicle_events (vin, kind, observed_at, previous, current)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT DO NOTHING`,
+      [
+        vin,
+        event.kind,
+        event.observedAt,
+        JSON.stringify(event.previous ?? null),
+        JSON.stringify(event.current ?? null),
+      ],
+    );
+    recorded += rowCount ?? 0;
+  }
+  return recorded;
+}
+
+/**
+ * Stores a position fix. Returns 1 if a new row landed, 0 if it duplicated a fix we
+ * already had — which is the common case, since the backend keeps returning the same
+ * position until the car reports a new one.
+ *
+ * A zone-less `time` is resolved here with VEHICLE_TZ, exactly as trip timestamps
+ * are, rather than being guessed at during parsing.
+ */
+export async function insertVehiclePosition(
+  vin: string,
+  position: VehiclePosition,
+  timezone: string,
+): Promise<number> {
+  const { rowCount } = await query(
+    `INSERT INTO vehicle_positions (
+       vin, reported_at, reported_at_raw, latitude, longitude, altitude, raw
+     ) VALUES (
+       $1,
+       COALESCE($2::timestamptz, $3::timestamp AT TIME ZONE $4::text),
+       $5, $6, $7, $8, $9
+     )
+     ON CONFLICT DO NOTHING`,
+    [
+      vin,
+      position.reportedAt,
+      position.reportedAtLocal,
+      timezone,
+      position.reportedAtRaw,
+      position.latitude,
+      position.longitude,
+      position.altitude,
+      JSON.stringify(position.raw),
+    ],
+  );
   return rowCount ?? 0;
 }
 
@@ -166,12 +281,24 @@ export async function startPollRun(): Promise<number> {
   return rows[0]!.id;
 }
 
+/** Why a poll did or did not spend a findMyCar call. Recorded on the poll_runs row. */
+export type LocationStatus =
+  | 'fetched'
+  | 'skipped_throttled'
+  | 'skipped_no_movement'
+  | 'rate_limited'
+  | 'failed'
+  | 'disabled';
+
 export interface PollRunOutcome {
   ok: boolean;
   tripsSeen: number;
   tripsInserted: number;
   tripsUpdated: number;
   statusInserted: number;
+  positionsInserted: number;
+  eventsRecorded: number;
+  locationStatus?: LocationStatus;
   error?: string;
 }
 
@@ -179,7 +306,8 @@ export async function finishPollRun(id: number, outcome: PollRunOutcome): Promis
   await query(
     `UPDATE poll_runs SET
        finished_at = now(), ok = $2, trips_seen = $3, trips_inserted = $4,
-       trips_updated = $5, status_inserted = $6, error = $7
+       trips_updated = $5, status_inserted = $6, error = $7,
+       positions_inserted = $8, events_recorded = $9, location_status = $10
      WHERE id = $1`,
     [
       id,
@@ -189,8 +317,114 @@ export async function finishPollRun(id: number, outcome: PollRunOutcome): Promis
       outcome.tripsUpdated,
       outcome.statusInserted,
       outcome.error ?? null,
+      outcome.positionsInserted,
+      outcome.eventsRecorded,
+      outcome.locationStatus ?? null,
     ],
   );
+}
+
+// --- findMyCar throttle ---
+//
+// The endpoint is rate limited and answers HT_534 when we overstep, so the budget has
+// to be tracked somewhere that survives a container restart. In memory it would reset
+// on every bounce, and a crash-looping poller would hammer the endpoint.
+
+export interface LocationFetchState {
+  last_attempt_at: Date | null;
+  last_success_at: Date | null;
+  last_odometer_miles: number | null;
+  rate_limited_until: Date | null;
+  consecutive_failures: number;
+}
+
+export async function getLocationFetchState(vin: string): Promise<LocationFetchState | null> {
+  const { rows } = await query<LocationFetchState>(
+    `SELECT last_attempt_at, last_success_at, last_odometer_miles,
+            rate_limited_until, consecutive_failures
+     FROM location_fetch_state WHERE vin = $1`,
+    [vin],
+  );
+  return rows[0] ?? null;
+}
+
+/** Stamps an attempt before it is made, so a crash mid-call still costs us the slot. */
+export async function markLocationAttempt(vin: string): Promise<void> {
+  await query(
+    `INSERT INTO location_fetch_state (vin, last_attempt_at, updated_at)
+     VALUES ($1, now(), now())
+     ON CONFLICT (vin) DO UPDATE SET last_attempt_at = now(), updated_at = now()`,
+    [vin],
+  );
+}
+
+/** Clears the failure count and records the odometer the fix was taken at. */
+export async function markLocationSuccess(
+  vin: string,
+  odometerMiles: number | null,
+): Promise<void> {
+  await query(
+    `INSERT INTO location_fetch_state (
+       vin, last_attempt_at, last_success_at, last_odometer_miles,
+       rate_limited_until, consecutive_failures, last_error, updated_at
+     ) VALUES ($1, now(), now(), $2, NULL, 0, NULL, now())
+     ON CONFLICT (vin) DO UPDATE SET
+       last_attempt_at     = now(),
+       last_success_at     = now(),
+       -- COALESCE so a fix taken while the odometer was unreadable does not erase
+       -- the last known value and re-trigger the movement gate forever.
+       last_odometer_miles = COALESCE(EXCLUDED.last_odometer_miles,
+                                      location_fetch_state.last_odometer_miles),
+       rate_limited_until   = NULL,
+       consecutive_failures = 0,
+       last_error           = NULL,
+       updated_at           = now()`,
+    [vin, odometerMiles],
+  );
+}
+
+/**
+ * Records a failure and, for a rate-limit refusal, sets the window to stay quiet for.
+ * Backoff doubles per consecutive failure from `baseMinutes`, capped at `maxMinutes`.
+ */
+export async function markLocationFailure(
+  vin: string,
+  options: {
+    rateLimited: boolean;
+    error: string;
+    baseMinutes: number;
+    maxMinutes: number;
+  },
+): Promise<Date | null> {
+  const { rows } = await query<{ rate_limited_until: Date | null }>(
+    `INSERT INTO location_fetch_state (
+       vin, last_attempt_at, consecutive_failures, last_error,
+       rate_limited_until, updated_at
+     ) VALUES (
+       $1, now(), 1, $2,
+       CASE WHEN $3::boolean THEN now() + make_interval(mins => $4::int) ELSE NULL END,
+       now()
+     )
+     ON CONFLICT (vin) DO UPDATE SET
+       last_attempt_at      = now(),
+       consecutive_failures = location_fetch_state.consecutive_failures + 1,
+       last_error           = $2,
+       rate_limited_until   = CASE
+         WHEN $3::boolean THEN now() + make_interval(mins => LEAST(
+           -- base * 2^failures: the first refusal waits one base interval, each
+           -- consecutive one doubles it. The exponent is clamped at 10 because
+           -- power(2, n)::int overflows past 31, and 1024x base is already over
+           -- the cap anyway.
+           $4::int * power(2, LEAST(location_fetch_state.consecutive_failures, 10))::int,
+           $5::int
+         )::int)
+         ELSE location_fetch_state.rate_limited_until
+       END,
+       updated_at = now()
+     RETURNING rate_limited_until`,
+    [vin, options.error, options.rateLimited, options.baseMinutes, options.maxMinutes],
+  );
+  return rows[0]?.rate_limited_until ?? null;
 }
 
 // --- Read paths, used by the API ---
@@ -264,20 +498,56 @@ async function nearestLocation(
   const comparison = direction === 'before' ? '<=' : '>=';
   const ordering = direction === 'before' ? 'DESC' : 'ASC';
 
+  // Both sources are searched together. findMyCar fixes are preferred when equally
+  // close in time (`source` ordering below) because they were requested at a moment
+  // of our choosing, whereas a snapshot's position is whatever the car last
+  // volunteered — but a much nearer snapshot still wins on time.
   const { rows } = await query(
-    `SELECT latitude, longitude, synced_at,
-            round(abs(extract(epoch FROM (synced_at - $2::timestamptz))) / 60.0)::int AS minutes_away
-     FROM vehicle_status_snapshots
-     WHERE vin = $1
-       AND latitude IS NOT NULL AND longitude IS NOT NULL
-       AND latitude <> 0 AND longitude <> 0
-       AND synced_at ${comparison} $2::timestamptz
-       AND abs(extract(epoch FROM (synced_at - $2::timestamptz))) <= $3 * 60
-     ORDER BY synced_at ${ordering}
+    `WITH fixes AS (
+       SELECT latitude, longitude, reported_at AS at, 'findMyCar' AS source
+       FROM vehicle_positions
+       WHERE vin = $1 AND reported_at IS NOT NULL
+       UNION ALL
+       SELECT latitude, longitude, synced_at AS at, 'status' AS source
+       FROM vehicle_status_snapshots
+       WHERE vin = $1
+         AND latitude IS NOT NULL AND longitude IS NOT NULL
+         AND latitude <> 0 AND longitude <> 0
+     )
+     SELECT latitude, longitude, at AS synced_at, source,
+            round(abs(extract(epoch FROM (at - $2::timestamptz))) / 60.0)::int AS minutes_away
+     FROM fixes
+     WHERE at ${comparison} $2::timestamptz
+       AND abs(extract(epoch FROM (at - $2::timestamptz))) <= $3 * 60
+     ORDER BY at ${ordering}, (source = 'findMyCar') DESC
      LIMIT 1`,
     [vin, at, windowMinutes],
   );
   return rows[0] ?? null;
+}
+
+export async function listPositions(vin: string | undefined, limit: number) {
+  const { rows } = await query(
+    `SELECT vin, reported_at, recorded_at, latitude, longitude, altitude, source
+     FROM vehicle_positions
+     WHERE ($1::text IS NULL OR vin = $1)
+     ORDER BY COALESCE(reported_at, recorded_at) DESC
+     LIMIT $2`,
+    [vin ?? null, limit],
+  );
+  return rows;
+}
+
+export async function listVehicleEvents(vin: string | undefined, limit: number) {
+  const { rows } = await query(
+    `SELECT id, vin, kind, observed_at, detected_at, previous, current
+     FROM vehicle_events
+     WHERE ($1::text IS NULL OR vin = $1)
+     ORDER BY COALESCE(observed_at, detected_at) DESC
+     LIMIT $2`,
+    [vin ?? null, limit],
+  );
+  return rows;
 }
 
 export async function getTrip(id: number) {
@@ -346,7 +616,8 @@ export async function tripSummary(vin?: string, from?: string, to?: string) {
 export async function listStatusSnapshots(vin: string | undefined, limit: number) {
   const { rows } = await query(
     `SELECT vin, synced_at, soc_percent, ev_range_miles, charging, plug_type,
-            charge_power, odometer_miles, latitude, longitude, locked, battery_12v
+            charge_power, odometer_miles, latitude, longitude, locked, battery_12v,
+            engine_running
      FROM vehicle_status_snapshots
      WHERE ($1::text IS NULL OR vin = $1)
      ORDER BY synced_at DESC
@@ -359,7 +630,8 @@ export async function listStatusSnapshots(vin: string | undefined, limit: number
 export async function listPollRuns(limit: number) {
   const { rows } = await query(
     `SELECT id, started_at, finished_at, ok, trips_seen, trips_inserted,
-            trips_updated, status_inserted, error
+            trips_updated, status_inserted, positions_inserted, events_recorded,
+            location_status, error
      FROM poll_runs ORDER BY started_at DESC LIMIT $1`,
     [limit],
   );
