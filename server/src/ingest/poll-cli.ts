@@ -17,7 +17,7 @@ try {
   if (dryRun) console.log('Dry run — nothing will be written.\n');
   const outcome = await poll({ dryRun });
   console.log(
-    `\nDone. ${outcome.tripsSeen} trip(s) seen, ` +
+    `\nDone. ${outcome.tripsSeen} trip(s) retrieved, ` +
       `${outcome.tripsInserted} new, ${outcome.tripsUpdated} already known, ` +
       `${outcome.statusInserted} status snapshot(s).`,
   );
