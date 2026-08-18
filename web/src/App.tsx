@@ -1,10 +1,45 @@
 import { useEffect, useState } from 'react';
-import { fetchPollRuns, fetchSummary, fetchTrips, fetchVehicles } from './api.ts';
-import type { PollRun, Summary, Trip, Vehicle } from './api.ts';
+import {
+  fetchEvents,
+  fetchLatestStatus,
+  fetchPollRuns,
+  fetchPositions,
+  fetchSummary,
+  fetchTrips,
+  fetchVehicles,
+} from './api.ts';
+import type {
+  LocationStatus,
+  PollRun,
+  Position,
+  StatusSnapshot,
+  Summary,
+  Trip,
+  Vehicle,
+  VehicleEvent,
+} from './api.ts';
+import { EventTimeline } from './components/EventTimeline.tsx';
+import { LiveStatus } from './components/LiveStatus.tsx';
 import { StatTiles } from './components/StatTiles.tsx';
 import { TripTable } from './components/TripTable.tsx';
 import { TripModal } from './components/TripModal.tsx';
 import { formatDateTime } from './format.ts';
+
+/**
+ * How each location outcome should read, and whether it deserves attention.
+ *
+ * `rate_limited` and `failed` are warnings on purpose: findMyCar backoff can last
+ * hours, and a silently stalled location feed is precisely the sort of thing this
+ * page exists to make visible.
+ */
+const LOCATION_NOTES: Record<LocationStatus, { text: string; warn: boolean }> = {
+  fetched: { text: 'location updated', warn: false },
+  skipped_no_movement: { text: 'location unchanged (parked)', warn: false },
+  skipped_throttled: { text: 'location throttled', warn: false },
+  rate_limited: { text: 'location rate limited by Hyundai — backing off', warn: true },
+  failed: { text: 'location fetch failed', warn: true },
+  disabled: { text: 'location tracking off', warn: false },
+};
 
 export function App() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -15,6 +50,9 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [lastPoll, setLastPoll] = useState<PollRun | null>(null);
   const [selectedTripId, setSelectedTripId] = useState<number | null>(null);
+  const [status, setStatus] = useState<StatusSnapshot | null>(null);
+  const [position, setPosition] = useState<Position | null>(null);
+  const [events, setEvents] = useState<VehicleEvent[]>([]);
 
   useEffect(() => {
     // A poller that is failing looks identical to an empty archive. Surface it.
@@ -56,6 +94,36 @@ export function App() {
     };
   }, [selectedVin]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    // These three are decoration around the archive: if any of them fails the trip
+    // table must still render, so each settles independently and failures are
+    // swallowed rather than raised into the page-level error.
+    void Promise.allSettled([
+      fetchLatestStatus(selectedVin),
+      fetchPositions(selectedVin, 1),
+      fetchEvents(selectedVin, 25),
+    ]).then(([statusResult, positionResult, eventResult]) => {
+      if (cancelled) return;
+      setStatus(
+        statusResult.status === 'fulfilled' ? (statusResult.value.snapshots[0] ?? null) : null,
+      );
+      setPosition(
+        positionResult.status === 'fulfilled' ? (positionResult.value.positions[0] ?? null) : null,
+      );
+      setEvents(eventResult.status === 'fulfilled' ? eventResult.value.events : []);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedVin]);
+
+  const locationNote = lastPoll?.location_status
+    ? LOCATION_NOTES[lastPoll.location_status]
+    : null;
+
   return (
     <main>
       <header>
@@ -93,8 +161,18 @@ export function App() {
 
       {lastPoll?.ok && (
         <p className="note">
-          Last poll {formatDateTime(lastPoll.started_at)} — {lastPoll.trips_seen} trip(s) seen,{' '}
-          {lastPoll.trips_inserted} new.
+          Last poll {formatDateTime(lastPoll.started_at)} — {lastPoll.trips_seen} trip(s) retrieved,{' '}
+          {lastPoll.trips_inserted} new
+          {lastPoll.events_recorded > 0 && `, ${lastPoll.events_recorded} event(s)`}
+          {locationNote && !locationNote.warn && ` · ${locationNote.text}`}.
+        </p>
+      )}
+
+      {/* Split out of the note above so a stalled location feed is not a clause at the
+          end of an otherwise reassuring "poll ok" line. */}
+      {lastPoll?.ok && locationNote?.warn && (
+        <p className="warn">
+          {locationNote.text}. Trips are unaffected — only position fixes pause.
         </p>
       )}
 
@@ -105,6 +183,8 @@ export function App() {
         </p>
       )}
 
+      <LiveStatus status={status} position={position} />
+
       <StatTiles summary={summary} />
 
       {loading ? (
@@ -112,6 +192,8 @@ export function App() {
       ) : (
         <TripTable trips={trips} onSelect={setSelectedTripId} />
       )}
+
+      <EventTimeline events={events} />
 
       {selectedTripId !== null && (
         <TripModal tripId={selectedTripId} onClose={() => setSelectedTripId(null)} />

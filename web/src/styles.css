@@ -317,3 +317,151 @@ tr.clickable:focus-visible {
   padding: 10px 14px;
   margin-bottom: 16px;
 }
+
+/* A stalled location feed is not an error — trips keep flowing — but it must not read
+   as routine either, so it sits between .note and .error in weight. */
+.warn {
+  background: color-mix(in srgb, darkorange 12%, transparent);
+  border: 1px solid color-mix(in srgb, darkorange 40%, transparent);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin: -8px 0 16px;
+  font-size: 13px;
+}
+
+.live {
+  margin-bottom: 20px;
+}
+
+.live-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.live-header h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+/* The car decides when to sync, so "right now" is always somewhat stale. Saying how
+   stale is the whole point of this line. */
+.live-asof {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.tile-hint {
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+.timeline {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.timeline-item {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  font-size: 13px;
+}
+
+.timeline-item:first-child {
+  border-radius: 8px 8px 0 0;
+}
+
+.timeline-item:last-child {
+  border-bottom: 1px solid var(--border);
+  border-radius: 0 0 8px 8px;
+}
+
+.timeline-item:only-child {
+  border-radius: 8px;
+}
+
+.event-kind {
+  font-weight: 600;
+  min-width: 130px;
+}
+
+.event-engine_on,
+.event-charge_start {
+  color: seagreen;
+}
+
+.event-engine_off,
+.event-charge_stop {
+  color: var(--muted);
+}
+
+.event-moved {
+  color: var(--accent);
+}
+
+@media (prefers-color-scheme: dark) {
+  .event-engine_on,
+  .event-charge_start {
+    color: mediumseagreen;
+  }
+}
+
+.event-when {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.event-detail {
+  font-variant-numeric: tabular-nums;
+}
+
+/* The gap between a change happening and us noticing it. Muted and small: it is a
+   caveat on the timestamp, not a headline. */
+.event-lag {
+  color: var(--muted);
+  font-size: 11px;
+  margin-left: auto;
+}
+
+.source-tag {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-left: 6px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.source-gps {
+  color: seagreen;
+  border-color: color-mix(in srgb, seagreen 40%, transparent);
+  background: color-mix(in srgb, seagreen 10%, transparent);
+}
+
+.source-cached {
+  color: var(--muted);
+  border-color: var(--border);
+}
+
+@media (prefers-color-scheme: dark) {
+  .source-gps {
+    color: mediumseagreen;
+    border-color: color-mix(in srgb, mediumseagreen 40%, transparent);
+  }
+}
