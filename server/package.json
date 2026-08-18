@@ -1,0 +1,29 @@
+{
+  "name": "@htt/server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "migrate": "node src/db/migrate.ts",
+    "poll:once": "node src/ingest/poll-cli.ts",
+    "poll": "node src/ingest/index.ts",
+    "api": "node src/api/server.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test \"test/**/*.test.ts\"",
+    "build": "tsc --noEmit",
+    "geonames:load": "node src/geonames/load.ts"
+  },
+  "dependencies": {
+    "@fastify/static": "^8.0.0",
+    "fastify": "^5.0.0",
+    "pg": "^8.13.0",
+    "pg-copy-streams": "^7.0.0",
+    "undici": "^7.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/pg": "^8.11.0",
+    "@types/pg-copy-streams": "^1.2.5",
+    "typescript": "^5.7.0"
+  }
+}
