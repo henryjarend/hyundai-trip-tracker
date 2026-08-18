@@ -259,8 +259,16 @@ export function parseVehicleStatusResponse(body: unknown): VehicleStatusSnapshot
   };
 }
 
-/** Matches "Tue, 24 Jun 2025 16:18:10 GMT" — the only form that pins down a real instant. */
+/** Matches "Tue, 24 Jun 2025 16:18:10 GMT" — a named-month instant Date can read. */
 const RFC_1123_GMT = /^[A-Za-z]{3},\s+\d{1,2}\s+[A-Za-z]{3}\s+\d{4}\s+\d{2}:\d{2}:\d{2}\s+GMT$/;
+
+/**
+ * A trailing zone designator: "Z", "GMT", "UTC", "+00:00", "-0400".
+ *
+ * Anchored at the end so the hyphens inside a date ("2025-06-24") cannot be mistaken
+ * for the sign of an offset.
+ */
+const ZONE_SUFFIX = /(Z|GMT|UTC|[+-]\d{2}:?\d{2})$/i;
 
 interface ParsedFixTime {
   reportedAt: string | null;
@@ -268,15 +276,20 @@ interface ParsedFixTime {
 }
 
 /**
- * `findMyCar` stamps its fixes in one of two shapes, and they mean different things:
+ * `findMyCar` stamps its fixes in several shapes, and what separates them is whether
+ * they name a zone:
  *
- * - "Tue, 24 Jun 2025 16:18:10 GMT" — explicitly UTC, so it resolves to an instant.
- * - "20250624161810" (or an ISO-ish variant with separators) — carries no zone at
- *   all, exactly like a trip's `startdate`. Resolved with VEHICLE_TZ at ingest
- *   rather than guessed at here.
+ * - "2026-08-17T23:01:38Z" — what the live API actually returns, and what
+ *   `vehicleStatus.dateTime` uses too. The Z means UTC; it resolves to an instant.
+ * - "Tue, 24 Jun 2025 16:18:10 GMT" — likewise explicitly UTC.
+ * - "20250624161810" — no zone at all, exactly like a trip's `startdate`. Resolved
+ *   with VEHICLE_TZ at ingest rather than guessed at here.
  *
- * Treating the second form as UTC would silently shift every fix by the offset,
- * which is the kind of error that looks plausible on a map and stays unnoticed.
+ * Confusing the two directions costs the whole vehicle offset, which looks entirely
+ * plausible on a map and stays unnoticed — but it puts the fix hours away from the
+ * trip it belongs to, so nothing matches it up again. (This code used to strip a
+ * trailing `Z` along with the separators and localise the result, which did exactly
+ * that; migration 005 repairs the rows it wrote.)
  */
 function parseFixTime(value: unknown): ParsedFixTime {
   if (typeof value !== 'string' || value.trim() === '') {
@@ -292,19 +305,31 @@ function parseFixTime(value: unknown): ParsedFixTime {
     }
   }
 
-  // Strip the separators the compact form sometimes arrives with, then read the
-  // fixed-width digits positionally.
-  const digits = raw.replace(/[-T:Z\s]/g, '');
+  // Split any zone designator off the front-loaded digits, so both the compact and
+  // the separated forms can be read positionally below.
+  const zone = ZONE_SUFFIX.exec(raw)?.[1] ?? null;
+  const body = zone === null ? raw : raw.slice(0, raw.length - zone.length);
+
+  const digits = body.replace(/[-T:\s]/g, '');
   const match = /^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/.exec(digits);
-  if (match) {
-    const [, year, month, day, hour, minute, second] = match;
-    return {
-      reportedAt: null,
-      reportedAtLocal: `${year}-${month}-${day}T${hour}:${minute}:${second}`,
-    };
+  if (match === null) {
+    return { reportedAt: null, reportedAtLocal: null };
   }
 
-  return { reportedAt: null, reportedAtLocal: null };
+  const [, year, month, day, hour, minute, second] = match;
+  const local = `${year}-${month}-${day}T${hour}:${minute}:${second}`;
+
+  if (zone === null) {
+    return { reportedAt: null, reportedAtLocal: local };
+  }
+
+  // A named zone is always UTC here; an explicit offset is applied as given.
+  const offset = /^[+-]/.test(zone) ? `${zone.slice(0, 3)}:${zone.slice(-2)}` : 'Z';
+  const parsed = new Date(`${local}${offset}`);
+  if (Number.isNaN(parsed.getTime())) {
+    return { reportedAt: null, reportedAtLocal: local };
+  }
+  return { reportedAt: parsed.toISOString(), reportedAtLocal: null };
 }
 
 /**

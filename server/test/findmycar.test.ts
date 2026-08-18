@@ -30,13 +30,38 @@ test('treats a compact timestamp as zone-less, not as UTC', () => {
   assert.equal(position.reportedAtLocal, '2025-06-24T16:18:10');
 });
 
-test('accepts the separated variant of the compact timestamp', () => {
+test('reads an ISO timestamp marked Z as UTC', () => {
+  // This is what the live endpoint actually sends, and `vehicleStatus.dateTime` uses
+  // the same shape — so the Z genuinely means UTC. Localising it instead moved every
+  // fix by the vehicle's offset and detached it from its trip.
   const position = parseFindMyCarResponse({
     coord: { lat: 43.1, lon: -85.5 },
-    time: '2025-06-24T16:18:10Z',
+    time: '2026-08-17T23:01:38Z',
   });
 
   assert.ok(position);
+  assert.equal(position.reportedAt, '2026-08-17T23:01:38.000Z');
+  assert.equal(position.reportedAtLocal, null);
+});
+
+test('applies an explicit UTC offset as given', () => {
+  const position = parseFindMyCarResponse({
+    coord: { lat: 43.1, lon: -85.5 },
+    time: '2026-08-17T19:01:38-04:00',
+  });
+
+  assert.ok(position);
+  assert.equal(position.reportedAt, '2026-08-17T23:01:38.000Z');
+});
+
+test('accepts the separated variant of the zone-less timestamp', () => {
+  const position = parseFindMyCarResponse({
+    coord: { lat: 43.1, lon: -85.5 },
+    time: '2025-06-24 16:18:10',
+  });
+
+  assert.ok(position);
+  assert.equal(position.reportedAt, null);
   assert.equal(position.reportedAtLocal, '2025-06-24T16:18:10');
 });
 
