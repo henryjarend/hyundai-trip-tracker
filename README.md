@@ -17,7 +17,7 @@ and React frontend are read-only views over that table.
 
 The web UI lists trips with date, distance, duration, kWh used and mi/kWh; clicking a row
 opens the full record — speeds, the per-system energy breakdown, moving vs. stopped time,
-approximate start/end locations, and the raw payload.
+start/end locations where they can be established, and the raw payload.
 
 The API call sequence is a direct TypeScript port of
 [BetterBlueKit](https://github.com/schmidtwmark/BetterBlueKit)'s `HyundaiUSAAPIClient`:
@@ -157,7 +157,7 @@ frontend, so everything is on one port.
 | `GET /api/health` | `{ok: true}` |
 | `GET /api/vehicles` | Enrolled vehicles with a trip count each |
 | `GET /api/trips` | Paginated trips, newest first — `vin`, `from`, `to`, `limit`, `offset` |
-| `GET /api/trips/:id` | One trip in full, plus `raw` and approximate start/end locations |
+| `GET /api/trips/:id` | One trip in full, plus `raw` and its start/end locations |
 | `GET /api/stats/summary` | Totals and average efficiency — same filters as `/api/trips` |
 | `GET /api/status` | Recent vehicle status snapshots |
 | `GET /api/positions` | Recent GPS fixes from `findMyCar` |
@@ -186,15 +186,37 @@ A database that is unreachable answers `503` with the reason, rather than hangin
 
 ## Live location and events
 
-Trip payloads carry no coordinates, so a trip's start and end are only ever *approximated*
-from a position fix that happens to sit near it in time. Two sources feed that:
+Trip payloads carry no coordinates, so a trip's start and end have to be recovered from
+position fixes recorded around it. Two sources feed that:
 
 - **`rcs/rfc/findMyCar`** — a real fix, fetched when we ask. Stored in `vehicle_positions`.
 - **The cached status snapshot**, whose position is whatever the car last volunteered.
+  There are far more of these, and they cost no rate-limit budget.
 
-`findMyCar` is preferred when both are equally close in time, but a much nearer snapshot
-still wins. `/api/trips/:id` reports `source` and `minutes_away` on each location so you can
-see how much to trust it.
+### The odometer is what ties a fix to a trip
+
+Matching on time alone fails badly: fixes arrive at the car's own sync cadence, so a trip
+that starts an hour after the last reading gets no start location even though the car
+demonstrably never moved in between.
+
+The odometer settles it. It is monotonic and appears in both the trip row and every status
+snapshot, so a fix taken at the same odometer as a trip boundary was taken while the car
+sat at that boundary — however long before or after. That is not an approximation; it is
+exact, and it survives arbitrarily long gaps in polling. `/api/trips/:id` reports
+`basis: "odometer"` for such a fix, and the UI labels it *parked here*.
+
+Time-nearness (90 minutes) remains only as the fallback for a fix with no usable odometer,
+reported as `basis: "time"`. A fix whose odometer *disagrees* is rejected outright rather
+than demoted — the car is known to have moved in between, so it is not that endpoint.
+
+Two guards keep the proof honest, both in `server/src/trip-location.ts`:
+
+- **An odometer is only recorded with a fix when the car was standing still.** A cached
+  status from a moving car pairs a fresh position with an odometer from however far back it
+  last synced; storing that would let a mid-route fix pose as an endpoint.
+- **The neighbouring trip bounds the search.** Trip distances are whole miles and snapshot
+  odometers are whole miles, so the comparison needs about a mile of slack — enough that a
+  sub-mile errand could otherwise be mistaken for its neighbour.
 
 ### There is no push notification, and there cannot be
 
@@ -270,11 +292,15 @@ from Hyundai's cache, so polling costs the car nothing.
 - **`findMyCar` reports rate limiting as an HTTP 200.** The refusal is in the body
   (`errorCode: 502` / `errorSubCode: HT_534`), so it can only be caught after parsing —
   see `isRateLimitBody` and `HyundaiRateLimitError`. Do not put this endpoint on a timer.
-- **`findMyCar`'s `time` field arrives in two shapes and they mean different things.**
-  `"Tue, 24 Jun 2025 16:18:10 GMT"` is a real instant; a compact `"20250624161810"` carries
-  no zone and is resolved with `VEHICLE_TZ` like a trip's `startdate`. Treating the second
-  as UTC shifts every fix by the offset — wrong in a way that still looks plausible on a
-  map. `reported_at_raw` keeps the original so a mis-resolution stays recoverable.
+- **`findMyCar`'s `time` field arrives in several shapes, and what separates them is
+  whether they name a zone.** `"2026-08-17T23:01:38Z"` (what the live endpoint sends, and
+  the same shape as `vehicleStatus.dateTime`) and `"Tue, 24 Jun 2025 16:18:10 GMT"` are
+  real instants; a compact `"20250624161810"` carries no zone and is resolved with
+  `VEHICLE_TZ` like a trip's `startdate`. Confusing the two directions shifts a fix by the
+  whole vehicle offset — wrong in a way that still looks plausible on a map, but far enough
+  to detach the fix from the trip it belongs to. `reported_at_raw` keeps the original so a
+  mis-resolution stays recoverable, which is how migration 005 repairs the fixes stored
+  before this was handled correctly.
 - **Transition detection needs the previous snapshot read *before* the new one is inserted**,
   or it diffs against itself. See the ordering in `poll.ts`.
 - A field going from `null` to a value is a first reading, not a transition. Emitting an
@@ -290,7 +316,10 @@ trusted network.
 
 **On trip locations.** Hyundai's `evTripDetails` returns no coordinates whatsoever — the
 14 fields are distance, odometer, speeds, duration, the energy breakdown and a timestamp.
-The start/end positions shown in trip detail are *approximations*, taken from the nearest
-`vehicleStatus` position reading within 90 minutes of each trip boundary. A poll that
-lands shortly after you park gives a good destination fix; one that doesn't gives nothing.
-Shortening `POLL_INTERVAL_MINUTES` improves the odds.
+`findMyCar` only ever answers "where is the car now"; there is no history endpoint anywhere
+in the API, and no route data of any kind. So a trip's endpoints can only come from
+positions this project recorded while it was running — trips that predate the archive, or
+that happened while the poller was down, have no locations and never will. Everything
+locations depend on is described under [the odometer is what ties a fix to a
+trip](#the-odometer-is-what-ties-a-fix-to-a-trip); the practical consequence is that
+uptime, not `POLL_INTERVAL_MINUTES`, is what fills them in.
