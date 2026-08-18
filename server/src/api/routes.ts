@@ -2,8 +2,10 @@ import type { FastifyInstance } from 'fastify';
 import {
   getTrip,
   listPollRuns,
+  listPositions,
   listStatusSnapshots,
   listTrips,
+  listVehicleEvents,
   listVehicles,
   tripSummary,
 } from '../db/repo.ts';
@@ -56,6 +58,14 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
 
   app.get<{ Querystring: TripQueryString }>('/api/status', async (request) => ({
     snapshots: await listStatusSnapshots(request.query.vin, clampInt(request.query.limit, 100, 1000)),
+  }));
+
+  app.get<{ Querystring: TripQueryString }>('/api/positions', async (request) => ({
+    positions: await listPositions(request.query.vin, clampInt(request.query.limit, 100, 1000)),
+  }));
+
+  app.get<{ Querystring: TripQueryString }>('/api/events', async (request) => ({
+    events: await listVehicleEvents(request.query.vin, clampInt(request.query.limit, 100, 1000)),
   }));
 
   app.get<{ Querystring: TripQueryString }>('/api/poll-runs', async (request) => ({

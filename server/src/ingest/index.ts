@@ -21,7 +21,8 @@ async function runOnce(): Promise<void> {
     const outcome = await poll();
     console.log(
       `poll ok: ${outcome.tripsSeen} seen, ${outcome.tripsInserted} new, ` +
-        `${outcome.statusInserted} status snapshot(s)`,
+        `${outcome.statusInserted} status snapshot(s), ` +
+        `${outcome.positionsInserted} position(s), ${outcome.eventsRecorded} event(s)`,
     );
   } catch (error) {
     console.error(`poll failed: ${(error as Error).message}`);
