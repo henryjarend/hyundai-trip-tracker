@@ -1,0 +1,51 @@
+{
+  "tripdetails": [
+    {
+      "startdate": "2026-08-16 14:32:07.0",
+      "duration": { "value": 1834, "unit": 1 },
+      "distance": 18,
+      "odometer": { "value": 12482.4, "unit": 3 },
+      "avgspeed": { "value": 35.4, "unit": 3 },
+      "maxspeed": { "value": 68.0, "unit": 3 },
+      "totalused": 5120,
+      "regen": 940,
+      "climate": 610,
+      "drivetrain": 4180,
+      "accessories": 210,
+      "batterycare": 120
+    },
+    {
+      "startdate": "2026-08-16 08:11:53.0",
+      "duration": { "value": 962, "unit": 1 },
+      "distance": 9,
+      "odometer": { "value": 12464.4, "unit": 3 },
+      "avgspeed": { "value": 28.1, "unit": 3 },
+      "maxspeed": { "value": 45.0, "unit": 3 },
+      "totalused": 2680,
+      "regen": 410,
+      "climate": 300,
+      "drivetrain": 2190,
+      "accessories": 130,
+      "batterycare": 60
+    },
+    {
+      "startdate": "2026-08-15 17:48:02.0",
+      "duration": { "value": 604, "unit": 1 },
+      "distance": 5,
+      "odometer": { "value": 12455.4, "unit": 3 },
+      "avgspeed": { "value": 22.0, "unit": 3 },
+      "maxspeed": { "value": 39.0, "unit": 3 },
+      "totalused": 0,
+      "regen": 0,
+      "climate": 0,
+      "drivetrain": 0,
+      "accessories": 0,
+      "batterycare": 0
+    },
+    {
+      "startdate": "malformed-date",
+      "distance": 4,
+      "totalused": 900
+    }
+  ]
+}

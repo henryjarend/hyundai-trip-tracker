@@ -1,0 +1,25 @@
+{
+  "vehicleStatus": {
+    "dateTime": "2026-08-17T14:05:11Z",
+    "doorLock": true,
+    "odometer": { "value": 12482.4, "unit": 3 },
+    "battery": { "batSoc": 87 },
+    "vehicleLocation": { "coord": { "lat": 36.1627, "lon": -86.7816 } },
+    "evStatus": {
+      "batteryCharge": true,
+      "batteryStatus": 64,
+      "batteryPlugin": 2,
+      "batteryStndChrgPower": 10.5,
+      "batteryFstChrgPower": 0,
+      "drvDistance": [
+        {
+          "type": 2,
+          "rangeByFuel": {
+            "evModeRange": { "value": 182.0, "unit": 3 },
+            "totalAvailableRange": { "value": 182.0, "unit": 3 }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "enrolledVehicleDetails": [
+    {
+      "vehicleDetails": {
+        "vin": "KM8KRDAF4PU123456",
+        "regid": "REG0000000000000001",
+        "nickName": "Ioniq 5",
+        "evStatus": "E",
+        "vehicleGeneration": "2",
+        "odometer": "12482.4"
+      }
+    },
+    {
+      "vehicleDetails": {
+        "nickName": "Broken entry with no VIN",
+        "evStatus": "E"
+      }
+    }
+  ]
+}
