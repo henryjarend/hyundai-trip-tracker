@@ -85,7 +85,17 @@ async function pollLocation(
       return { inserted: 0, status: 'fetched' };
     }
 
-    const inserted = await insertVehiclePosition(vehicle.vin, position, config.vehicleTz);
+    // The odometer is only recorded with the fix when the car was standing still.
+    // A running engine means the cached status behind `odometerMiles` is stale by an
+    // unknown amount of driving, and storing that against a live position would let a
+    // mid-route fix pose as a trip's start or end (see trip-location.ts).
+    const parkedOdometer = status.engineRunning === false ? status.odometerMiles : null;
+    const inserted = await insertVehiclePosition(
+      vehicle.vin,
+      position,
+      config.vehicleTz,
+      parkedOdometer,
+    );
     await markLocationSuccess(vehicle.vin, status.odometerMiles);
     console.log(
       `  location: ${position.latitude.toFixed(5)}, ${position.longitude.toFixed(5)}` +

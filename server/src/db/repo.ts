@@ -1,6 +1,8 @@
 /** All database reads and writes. */
 import { query } from './pool.ts';
 import { nearestPlace } from '../geocode.ts';
+import { chooseBoundaryFix, EXACT_TOLERANCE_MILES, startOdometer } from '../trip-location.ts';
+import type { Fix, FixSource, ResolvedFix } from '../trip-location.ts';
 import type {
   Trip,
   Vehicle,
@@ -245,18 +247,26 @@ export async function recordVehicleEvents(
  * A zone-less `time` is resolved here with VEHICLE_TZ, exactly as trip timestamps
  * are, rather than being guessed at during parsing.
  */
+/**
+ * `odometerMiles` is what later lets the fix be tied to a trip boundary by proof
+ * rather than by time-nearness, so it must only be supplied when the car was standing
+ * still — see `pollLocation`. Null is the safe value; it costs precision, not
+ * correctness.
+ */
 export async function insertVehiclePosition(
   vin: string,
   position: VehiclePosition,
   timezone: string,
+  odometerMiles: number | null = null,
 ): Promise<number> {
   const { rowCount } = await query(
     `INSERT INTO vehicle_positions (
-       vin, reported_at, reported_at_raw, latitude, longitude, altitude, raw
+       vin, reported_at, reported_at_raw, latitude, longitude, altitude,
+       odometer_miles, raw
      ) VALUES (
        $1,
        COALESCE($2::timestamptz, $3::timestamp AT TIME ZONE $4::text),
-       $5, $6, $7, $8, $9
+       $5, $6, $7, $8, $9, $10
      )
      ON CONFLICT DO NOTHING`,
     [
@@ -268,6 +278,7 @@ export async function insertVehiclePosition(
       position.latitude,
       position.longitude,
       position.altitude,
+      odometerMiles,
       JSON.stringify(position.raw),
     ],
   );
@@ -482,48 +493,168 @@ export async function listTrips(filter: TripQuery) {
 }
 
 /**
- * The nearest status snapshot to a moment in time, within `windowMinutes`.
+ * How many fixes on one side of a boundary to consider.
  *
- * Hyundai's trip payload carries no coordinates at all, so a trip's start and end
- * locations can only be *approximated* from where the poller happened to observe
- * the car. The returned `minutes_away` says how stale the fix is — without it these
- * numbers would look far more authoritative than they are.
+ * The winning fix is essentially always the first or second one: every fix taken
+ * while the car sat at a boundary shares that boundary's odometer, so the nearest of
+ * them qualifies immediately. The rest of the budget only exists to see past a run of
+ * fixes with no odometer recorded.
  */
-async function nearestLocation(
+const CANDIDATE_FIXES = 50;
+
+/** node-postgres hands `numeric` back as a string to keep its precision. */
+function numeric(value: string | number | null): number | null {
+  if (value === null) return null;
+  const parsed = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+interface FixRow {
+  latitude: number;
+  longitude: number;
+  at: Date;
+  source: FixSource;
+  odometer_miles: string | number | null;
+}
+
+/**
+ * Every position we hold on one side of a moment, nearest first.
+ *
+ * Both sources are read together: findMyCar fixes were requested at a moment of our
+ * choosing, snapshot positions are whatever the car happened to volunteer, and there
+ * are far more of the latter. Which one wins is decided by `chooseBoundaryFix`.
+ */
+async function candidateFixes(
   vin: string,
   at: string,
   direction: 'before' | 'after',
-  windowMinutes = 90,
-) {
+): Promise<Fix[]> {
   const comparison = direction === 'before' ? '<=' : '>=';
   const ordering = direction === 'before' ? 'DESC' : 'ASC';
 
-  // Both sources are searched together. findMyCar fixes are preferred when equally
-  // close in time (`source` ordering below) because they were requested at a moment
-  // of our choosing, whereas a snapshot's position is whatever the car last
-  // volunteered — but a much nearer snapshot still wins on time.
-  const { rows } = await query(
+  const { rows } = await query<FixRow>(
     `WITH fixes AS (
-       SELECT latitude, longitude, reported_at AS at, 'findMyCar' AS source
+       SELECT latitude, longitude, reported_at AS at, 'findMyCar' AS source,
+              odometer_miles
        FROM vehicle_positions
        WHERE vin = $1 AND reported_at IS NOT NULL
        UNION ALL
-       SELECT latitude, longitude, synced_at AS at, 'status' AS source
+       SELECT latitude, longitude, synced_at AS at, 'status' AS source,
+              -- Only a stationary snapshot's odometer describes where its coordinates
+              -- are: a cached status from a moving car pairs a fresh-looking position
+              -- with an odometer from however far back it last synced. Dropping it
+              -- costs the fix its proof, not its usefulness — it can still be matched
+              -- on time.
+              CASE WHEN engine_running IS FALSE THEN odometer_miles END AS odometer_miles
        FROM vehicle_status_snapshots
        WHERE vin = $1
          AND latitude IS NOT NULL AND longitude IS NOT NULL
          AND latitude <> 0 AND longitude <> 0
      )
-     SELECT latitude, longitude, at AS synced_at, source,
-            round(abs(extract(epoch FROM (at - $2::timestamptz))) / 60.0)::int AS minutes_away
+     SELECT latitude, longitude, at, source, odometer_miles
      FROM fixes
      WHERE at ${comparison} $2::timestamptz
-       AND abs(extract(epoch FROM (at - $2::timestamptz))) <= $3 * 60
-     ORDER BY at ${ordering}, (source = 'findMyCar') DESC
-     LIMIT 1`,
-    [vin, at, windowMinutes],
+     ORDER BY at ${ordering}
+     LIMIT $3`,
+    [vin, at, CANDIDATE_FIXES],
   );
-  return rows[0] ?? null;
+
+  return rows.map((row) => ({
+    latitude: row.latitude,
+    longitude: row.longitude,
+    at: row.at,
+    source: row.source,
+    odometerMiles: numeric(row.odometer_miles),
+  }));
+}
+
+interface NeighbourTrip {
+  start_date: Date;
+  end_date: Date;
+  odometer_miles: string | number | null;
+  distance_miles: string | number | null;
+}
+
+/**
+ * The trips either side of this one, which bound where its endpoints can be.
+ *
+ * The previous trip matters twice over: its ending odometer is this trip's starting
+ * odometer exactly (when the two are contiguous), and its end is the earliest moment a
+ * fix could describe where this trip began.
+ */
+async function neighbourTrips(
+  vin: string,
+  startDate: Date,
+): Promise<{ previous: NeighbourTrip | null; next: NeighbourTrip | null }> {
+  const columns = `start_date,
+                   start_date + make_interval(secs => duration_seconds) AS end_date,
+                   odometer_miles, distance_miles`;
+
+  const [previous, next] = await Promise.all([
+    query<NeighbourTrip>(
+      `SELECT ${columns} FROM trips
+       WHERE vin = $1 AND start_date < $2 ORDER BY start_date DESC LIMIT 1`,
+      [vin, startDate],
+    ),
+    query<NeighbourTrip>(
+      `SELECT ${columns} FROM trips
+       WHERE vin = $1 AND start_date > $2 ORDER BY start_date ASC LIMIT 1`,
+      [vin, startDate],
+    ),
+  ]);
+
+  return { previous: previous.rows[0] ?? null, next: next.rows[0] ?? null };
+}
+
+interface TripEndpoints {
+  vin: string;
+  start_date: Date;
+  end_date: Date;
+  odometer_miles: string | number | null;
+  distance_miles: string | number | null;
+}
+
+/** Resolves a trip's two endpoints to positions, each with the basis it rests on. */
+async function tripLocations(trip: TripEndpoints) {
+  const { previous, next } = await neighbourTrips(trip.vin, trip.start_date);
+
+  const self = {
+    odometerMiles: numeric(trip.odometer_miles),
+    distanceMiles: numeric(trip.distance_miles),
+  };
+  const start = startOdometer(
+    self,
+    previous === null
+      ? null
+      : {
+          odometerMiles: numeric(previous.odometer_miles),
+          distanceMiles: numeric(previous.distance_miles),
+        },
+  );
+
+  const [before, after] = await Promise.all([
+    candidateFixes(trip.vin, trip.start_date.toISOString(), 'before'),
+    candidateFixes(trip.vin, trip.end_date.toISOString(), 'after'),
+  ]);
+
+  return {
+    startLocation: chooseBoundaryFix(before, {
+      edge: 'start',
+      at: trip.start_date,
+      odometerMiles: start.odometerMiles,
+      odometerToleranceMiles: start.toleranceMiles,
+      limit: previous?.end_date ?? null,
+    }),
+    // The trip's own odometer reading is taken at its end, so this boundary needs
+    // nothing derived.
+    endLocation: chooseBoundaryFix(after, {
+      edge: 'end',
+      at: trip.end_date,
+      odometerMiles: self.odometerMiles,
+      odometerToleranceMiles: EXACT_TOLERANCE_MILES,
+      limit: next?.start_date ?? null,
+    }),
+  };
 }
 
 export async function listPositions(vin: string | undefined, limit: number) {
@@ -572,16 +703,21 @@ export async function getTrip(id: number) {
   const trip = rows[0];
   if (!trip) return null;
 
-  const [startLocation, endLocation] = await Promise.all([
-    nearestLocation(trip.vin, trip.start_date.toISOString(), 'before'),
-    nearestLocation(trip.vin, trip.end_date.toISOString(), 'after'),
-  ]);
+  const { startLocation, endLocation } = await tripLocations(trip as TripEndpoints);
 
-  // Resolve each position to a town name from the local GeoNames table.
-  const withPlace = async (location: typeof startLocation) => {
+  // Resolve each position to a town name from the local GeoNames table. `synced_at` is
+  // the wire name for the fix's own instant, kept from when snapshots were the only
+  // source of one.
+  const withPlace = async (location: ResolvedFix | null) => {
     if (!location) return null;
+    const { at, ...rest } = location;
     const place = await nearestPlace(location.latitude, location.longitude);
-    return { ...location, label: place?.label ?? null, place_distance_miles: place?.distance_miles ?? null };
+    return {
+      ...rest,
+      synced_at: at,
+      label: place?.label ?? null,
+      place_distance_miles: place?.distance_miles ?? null,
+    };
   };
 
   return {
