@@ -11,6 +11,7 @@ import type {
   PlugType,
   Trip,
   Vehicle,
+  VehiclePosition,
   VehicleStatusSnapshot,
 } from './types.ts';
 
@@ -253,6 +254,96 @@ export function parseVehicleStatusResponse(body: unknown): VehicleStatusSnapshot
     longitude: num(coord?.lon),
     locked: typeof status.doorLock === 'boolean' ? status.doorLock : null,
     battery12v: num(battery?.batSoc),
+    engineRunning: typeof status.engine === 'boolean' ? status.engine : null,
     raw: status,
   };
+}
+
+/** Matches "Tue, 24 Jun 2025 16:18:10 GMT" — the only form that pins down a real instant. */
+const RFC_1123_GMT = /^[A-Za-z]{3},\s+\d{1,2}\s+[A-Za-z]{3}\s+\d{4}\s+\d{2}:\d{2}:\d{2}\s+GMT$/;
+
+interface ParsedFixTime {
+  reportedAt: string | null;
+  reportedAtLocal: string | null;
+}
+
+/**
+ * `findMyCar` stamps its fixes in one of two shapes, and they mean different things:
+ *
+ * - "Tue, 24 Jun 2025 16:18:10 GMT" — explicitly UTC, so it resolves to an instant.
+ * - "20250624161810" (or an ISO-ish variant with separators) — carries no zone at
+ *   all, exactly like a trip's `startdate`. Resolved with VEHICLE_TZ at ingest
+ *   rather than guessed at here.
+ *
+ * Treating the second form as UTC would silently shift every fix by the offset,
+ * which is the kind of error that looks plausible on a map and stays unnoticed.
+ */
+function parseFixTime(value: unknown): ParsedFixTime {
+  if (typeof value !== 'string' || value.trim() === '') {
+    return { reportedAt: null, reportedAtLocal: null };
+  }
+
+  const raw = value.trim();
+
+  if (RFC_1123_GMT.test(raw)) {
+    const parsed = new Date(raw);
+    if (!Number.isNaN(parsed.getTime())) {
+      return { reportedAt: parsed.toISOString(), reportedAtLocal: null };
+    }
+  }
+
+  // Strip the separators the compact form sometimes arrives with, then read the
+  // fixed-width digits positionally.
+  const digits = raw.replace(/[-T:Z\s]/g, '');
+  const match = /^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/.exec(digits);
+  if (match) {
+    const [, year, month, day, hour, minute, second] = match;
+    return {
+      reportedAt: null,
+      reportedAtLocal: `${year}-${month}-${day}T${hour}:${minute}:${second}`,
+    };
+  }
+
+  return { reportedAt: null, reportedAtLocal: null };
+}
+
+/**
+ * Parses a `findMyCar` response.
+ *
+ * Returns null when the payload carries no usable fix. That is a routine outcome,
+ * not an error: the backend answers 200 with no `coord` when it has no position to
+ * give. Rate limiting is signalled the same way (a 200 body carrying errorCode 502
+ * / errorSubCode HT_534) and is detected in the client, which can act on it.
+ */
+export function parseFindMyCarResponse(body: unknown): VehiclePosition | null {
+  const json = asObject(body);
+  const coord = asObject(json?.coord);
+
+  const latitude = num(coord?.lat);
+  const longitude = num(coord?.lon);
+  if (latitude === null || longitude === null) return null;
+
+  // (0, 0) is the backend's "no idea" answer, not a fix in the Gulf of Guinea.
+  if (latitude === 0 && longitude === 0) return null;
+
+  const { reportedAt, reportedAtLocal } = parseFixTime(json?.time);
+
+  return {
+    latitude,
+    longitude,
+    altitude: num(coord?.alt),
+    reportedAtRaw: typeof json?.time === 'string' ? json.time : null,
+    reportedAt,
+    reportedAtLocal,
+    raw: json,
+  };
+}
+
+/**
+ * True when a 200 response body is actually the backend refusing on rate-limit
+ * grounds. `findMyCar` reports this in-band rather than with HTTP 429.
+ */
+export function isRateLimitBody(body: unknown): boolean {
+  const json = asObject(body);
+  return num(json?.errorCode) === 502 && json?.errorSubCode === 'HT_534';
 }

@@ -14,12 +14,20 @@ import { request } from 'undici';
 import type { Dispatcher } from 'undici';
 import { authorizedHeaders, baseHeaders, BASE_URL, redactHeaders } from './headers.ts';
 import {
+  isRateLimitBody,
+  parseFindMyCarResponse,
   parseLoginResponse,
   parseTripsResponseDetailed,
   parseVehiclesResponse,
   parseVehicleStatusResponse,
 } from './parse.ts';
-import type { AuthToken, Trip, Vehicle, VehicleStatusSnapshot } from './types.ts';
+import type {
+  AuthToken,
+  Trip,
+  Vehicle,
+  VehiclePosition,
+  VehicleStatusSnapshot,
+} from './types.ts';
 
 export interface ClientOptions {
   username: string;
@@ -40,6 +48,21 @@ export class HyundaiApiError extends Error {
     this.name = 'HyundaiApiError';
     this.statusCode = statusCode;
     this.body = body;
+  }
+}
+
+/**
+ * The backend refusing a call because we have asked too often.
+ *
+ * Its own type because the caller's response is completely different from any other
+ * failure: back off for a while rather than retry. Note that this arrives as an
+ * HTTP *200* whose body carries errorCode 502 / errorSubCode HT_534, so it can only
+ * be detected after parsing — `statusCode` here is the real transport status.
+ */
+export class HyundaiRateLimitError extends HyundaiApiError {
+  constructor(message: string, statusCode: number, body: string) {
+    super(message, statusCode, body);
+    this.name = 'HyundaiRateLimitError';
   }
 }
 
@@ -210,6 +233,34 @@ export class HyundaiClient {
         this.#headersFor(token, vehicle),
       );
       return parseVehicleStatusResponse(body);
+    });
+  }
+
+  /**
+   * A live position fix, independent of whenever the car last synced its status.
+   *
+   * This is a *rate-limited* endpoint, so callers must not put it on a fixed timer —
+   * see the throttle in `db/repo.ts` for the budget this is meant to be spent under.
+   * Returns null when the backend simply has no position to report, and throws
+   * HyundaiRateLimitError when it refuses because we have asked too often.
+   *
+   * Unlike a status refresh this does not set the `refresh` header, so it reads
+   * Hyundai's last known position rather than waking the modem to ask the car.
+   */
+  async fetchLocation(vehicle: Vehicle): Promise<VehiclePosition | null> {
+    return this.#withAuth(async (token) => {
+      const path = '/ac/v2/rcs/rfc/findMyCar';
+      const body = await this.#send(path, 'GET', this.#headersFor(token, vehicle));
+
+      if (isRateLimitBody(body)) {
+        throw new HyundaiRateLimitError(
+          `GET ${path} refused: findMyCar rate limit exceeded (HT_534)`,
+          200,
+          JSON.stringify(body).slice(0, 2000),
+        );
+      }
+
+      return parseFindMyCarResponse(body);
     });
   }
 }
