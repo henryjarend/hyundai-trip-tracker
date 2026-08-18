@@ -1,0 +1,48 @@
+services:
+  db:
+    image: docker.io/library/postgres:18-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: hyundai
+    volumes:
+      # Postgres 18+ images store data in a major-version subdirectory and expect a
+      # single mount at /var/lib/postgresql. Mounting the old /var/lib/postgresql/data
+      # path makes the container refuse to start.
+      - pgdata:/var/lib/postgresql
+    # ports:
+    #   # Exposed so you can psql in from the host for the verification queries.
+    #   - '5432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d hyundai']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    command: ['node', 'server/src/api/server.ts']
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/hyundai
+    ports:
+      - '3000:3000'
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  poller:
+    build: .
+    # The poller runs migrations on start, so a fresh volume needs no extra step.
+    command: ['node', 'server/src/ingest/index.ts']
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/hyundai
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:
