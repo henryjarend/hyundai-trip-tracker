@@ -83,11 +83,17 @@ hold the names — it does not replace them, and `--podman-args replace` does no
 Removing them first avoids it. (Docker Compose recreates automatically; this is a
 podman-compose difference.)
 
-**Podman Desktop on Windows won't show these containers.** Podman Desktop talks to its
-own Podman machine, which is a different WSL distro with a separate container store from
-the `podman` inside your Ubuntu WSL distro. Since the project files and builds live in
-WSL, manage the stack from the WSL CLI — the two container lists are independent and
-that is expected, not a fault.
+**Podman Desktop and the CLI must point at the same engine.** Podman Desktop talks to its
+own Podman machine, a separate WSL distro with its own container store — so a stack
+started by a bare `podman` in a different WSL distro is invisible to it. This stack runs
+on the machine engine Desktop uses, so the CLI has to be aimed there too:
+
+```bash
+export CONTAINER_CONNECTION=podman-machine-default-root
+```
+
+Put that in `~/.bashrc`. Without it, `podman ps` and the `stack:*` scripts address a
+different engine than Desktop and appear to show nothing.
 
 ### Run it without containers
 
@@ -154,6 +160,8 @@ frontend, so everything is on one port.
 | `GET /api/trips/:id` | One trip in full, plus `raw` and approximate start/end locations |
 | `GET /api/stats/summary` | Totals and average efficiency — same filters as `/api/trips` |
 | `GET /api/status` | Recent vehicle status snapshots |
+| `GET /api/positions` | Recent GPS fixes from `findMyCar` |
+| `GET /api/events` | Inferred transitions — engine on/off, moved, charge, plug |
 | `GET /api/poll-runs` | Poll history, including failures |
 | `POST /api/poll` | Runs a poll immediately |
 
@@ -170,6 +178,68 @@ A database that is unreachable answers `503` with the reason, rather than hangin
 | `HYUNDAI_UTC_OFFSET` | `-5` | The `offset` header the app sends |
 | `PORT` | `3000` | |
 | `DEBUG_HTTP` | `0` | `1` logs redacted outgoing headers |
+| `LOCATION_ENABLED` | `1` | `0` disables GPS fetching entirely |
+| `LOCATION_INTERVAL_MINUTES` | `60` | Floor between fixes while parked |
+| `LOCATION_ACTIVE_INTERVAL_MINUTES` | `10` | Floor between fixes while the engine runs |
+| `LOCATION_BACKOFF_MINUTES` | `60` | First wait after an `HT_534` refusal; doubles |
+| `LOCATION_BACKOFF_MAX_MINUTES` | `720` | Cap on that doubling |
+
+## Live location and events
+
+Trip payloads carry no coordinates, so a trip's start and end are only ever *approximated*
+from a position fix that happens to sit near it in time. Two sources feed that:
+
+- **`rcs/rfc/findMyCar`** — a real fix, fetched when we ask. Stored in `vehicle_positions`.
+- **The cached status snapshot**, whose position is whatever the car last volunteered.
+
+`findMyCar` is preferred when both are equally close in time, but a much nearer snapshot
+still wins. `/api/trips/:id` reports `source` and `minutes_away` on each location so you can
+see how much to trust it.
+
+### There is no push notification, and there cannot be
+
+The Bluelink USA API has no webhook, no push channel, no MQTT and no long-poll — the
+[reference implementation](https://github.com/Hyundai-Kia-Connect/hyundai_kia_connect_api)
+contains no such mechanism for any region. "The car started" can therefore only be observed
+*after the fact*, by noticing that a field changed between two polls. That is what
+`vehicle_events` records:
+
+| Event | Inferred from |
+|---|---|
+| `engine_on` / `engine_off` | `vehicleStatus.engine` flipping |
+| `moved` | The odometer increasing |
+| `charge_start` / `charge_stop` | `evStatus.batteryCharge` flipping |
+| `plugged_in` / `unplugged` | `evStatus.batteryPlugin` changing |
+
+Two limits are inherent, not bugs:
+
+1. **Latency is set by the car, not by `POLL_INTERVAL_MINUTES`.** Cached status only changes
+   once the car has synced, so an `engine_on` can surface minutes late. `observed_at` is
+   when it happened; `detected_at` is when we noticed.
+2. **Short trips can be missed.** If the car starts and stops between two syncs, no field
+   ever differs. `moved` is the backstop — the odometer is cumulative, so mileage is never
+   lost even when the engine transition is.
+
+Getting lower latency would mean setting the `refresh` header to wake the car's modem on a
+schedule, which drains the 12V battery. This project deliberately never does that.
+
+### Why location fetching is throttled
+
+`findMyCar` is rate limited. It refuses with HTTP 200 and a body carrying
+`errorCode: 502` / `errorSubCode: HT_534`, so the refusal has to be detected after parsing.
+
+A call is only spent when it can tell us something new: the engine is running, or the
+odometer has moved since the last fix. A parked car's position cannot have changed, so
+asking is waste. On a refusal the poller backs off exponentially from
+`LOCATION_BACKOFF_MINUTES`, capped at `LOCATION_BACKOFF_MAX_MINUTES`.
+
+**That budget lives in the database** (`location_fetch_state`), not in memory. In memory it
+would reset on every container restart, and a crash-looping poller would hammer the
+endpoint. Every decision is recorded on the `poll_runs` row as `location_status`, so
+`fetched` / `skipped_no_movement` / `rate_limited` is visible without reading logs.
+
+None of this can fail a poll. A skipped, refused or failed fix leaves the trip archive —
+the thing this project exists for — completely untouched.
 
 ### Why 15 minutes
 
@@ -197,6 +267,21 @@ from Hyundai's cache, so polling costs the car nothing.
   and so must this.
 - Trip entries that fail to parse are logged with the field that was missing rather than
   dropped silently — check the poller log if a trip you expect never appears.
+- **`findMyCar` reports rate limiting as an HTTP 200.** The refusal is in the body
+  (`errorCode: 502` / `errorSubCode: HT_534`), so it can only be caught after parsing —
+  see `isRateLimitBody` and `HyundaiRateLimitError`. Do not put this endpoint on a timer.
+- **`findMyCar`'s `time` field arrives in two shapes and they mean different things.**
+  `"Tue, 24 Jun 2025 16:18:10 GMT"` is a real instant; a compact `"20250624161810"` carries
+  no zone and is resolved with `VEHICLE_TZ` like a trip's `startdate`. Treating the second
+  as UTC shifts every fix by the offset — wrong in a way that still looks plausible on a
+  map. `reported_at_raw` keeps the original so a mis-resolution stays recoverable.
+- **Transition detection needs the previous snapshot read *before* the new one is inserted**,
+  or it diffs against itself. See the ordering in `poll.ts`.
+- A field going from `null` to a value is a first reading, not a transition. Emitting an
+  event there would invent one every time the backend starts reporting a new field.
+- `vehicle_positions` and `vehicle_events` both use `UNIQUE NULLS NOT DISTINCT` (Postgres
+  15+) so that rows with a missing timestamp still dedupe instead of accumulating a copy
+  on every poll.
 
 ## Not included
 
