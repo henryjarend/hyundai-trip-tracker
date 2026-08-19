@@ -192,6 +192,46 @@ A database that is unreachable answers `503` with the reason, rather than hangin
 | `LOCATION_BACKOFF_MINUTES` | `60` | First wait after an `HT_534` refusal; doubles |
 | `LOCATION_BACKOFF_MAX_MINUTES` | `720` | Cap on that doubling |
 
+## CI, releases and the container image
+
+Three workflows' worth of behaviour, all from off-the-shelf actions:
+
+**Every pull request** runs `npm run typecheck` and `npm test` on the Node from
+`mise.toml`, and builds the image without pushing it — a broken Dockerfile should fail on
+the PR, because at release time the only fix is another release. No credentials are
+needed; the geocoding tests skip themselves when Postgres is unreachable.
+
+**Every push to main** updates a release pull request
+([release-please](https://github.com/googleapis/release-please)) listing the
+conventional-commit subjects accumulated since the last release. That PR is the release:
+merging it bumps the version in `package.json`, writes `CHANGELOG.md`, tags the commit and
+publishes a GitHub release. Commit subjects therefore matter — `feat:` takes the minor,
+`fix:` the patch, and a `!` or a `BREAKING CHANGE:` footer takes the major.
+
+**Merging the release PR** then builds and pushes the image to GitHub Container Registry,
+tagged four ways — `1.2.3`, `1.2`, `1`, and `latest`:
+
+```bash
+podman pull ghcr.io/henryjarend/hyundai-trip-tracker:latest
+```
+
+One image, two entrypoints, exactly as the compose file uses it — `node
+server/src/api/server.ts` for the API and `node server/src/ingest/index.ts` for the
+poller. `npm run stack:up` still builds locally from source; the published image is for
+running it somewhere that is not this checkout.
+
+A note on the two things that are easy to trip over here:
+
+- **The publish job hangs off the release job rather than watching for the tag.**
+  Release-please tags using the workflow's own `GITHUB_TOKEN`, and events raised by that
+  token never start another workflow run, so an `on: push: tags` build would never fire.
+- **A newly created GHCR package is private.** Make it public under the package's settings
+  if you want to pull without authenticating; otherwise `podman login ghcr.io` with a
+  token carrying `read:packages`.
+
+Images are `linux/amd64` only. Adding `platforms: linux/amd64,linux/arm64` to the build
+step covers a Pi, at the cost of an emulated `npm ci` on every release.
+
 ## Live location and events
 
 Trip payloads carry no coordinates, so a trip's start and end have to be recovered from
