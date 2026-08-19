@@ -41,11 +41,15 @@ Unofficial and unaffiliated with Hyundai. Requires an active Bluelink subscripti
 ## Setup
 
 ```bash
+mise install            # Node 26, per mise.toml — skip if you have it another way
 cp .env.example .env    # fill in your Bluelink email, password and PIN
 npm install
 ```
 
 `.env` holds your Bluelink password and PIN. It is gitignored — keep it that way.
+
+Node 26 is a hard floor: the server has no build step because Node runs the TypeScript
+sources directly. `mise.toml` pins it, and CI installs from that same file.
 
 ### Run it
 

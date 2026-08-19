@@ -1,0 +1,8 @@
+# Toolchain for local work and CI alike — `jdx/mise-action` reads this file, so the
+# workflows cannot drift from what a developer has on their machine.
+#
+# Node 26 is a floor, not a preference: the server has no build step because Node runs
+# the TypeScript sources directly via native type stripping. The Dockerfile pins the
+# same major (node:26-alpine) and has to be moved with this.
+[tools]
+node = "26"

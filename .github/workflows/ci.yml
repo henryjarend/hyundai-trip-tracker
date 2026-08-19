@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Nothing in here writes anywhere, including to the registry.
+permissions:
+  contents: read
+
+# A force-push or a second commit makes the previous run's answer irrelevant.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Installs the Node in mise.toml, so CI and a developer's machine cannot end up
+      # on different majors — which for this repo would mean CI silently testing
+      # against a runtime that cannot strip types.
+      - uses: jdx/mise-action@v4
+
+      - run: npm ci
+
+      - run: npm run typecheck
+
+      # No credentials and no database needed: the geocoding tests skip themselves when
+      # Postgres is unreachable, which is exactly the case here.
+      - run: npm test
+
+  image:
+    # Builds without pushing, so a broken Dockerfile surfaces on the pull request. At
+    # release time the only way to fix one is another release.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # The default docker driver cannot export a GitHub Actions cache; buildx can, and
+      # `npm ci` plus the Vite build are most of this image's build time.
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
