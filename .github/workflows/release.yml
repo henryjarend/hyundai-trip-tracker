@@ -26,7 +26,7 @@ jobs:
     steps:
       # `release-type: node` needs no config file: it reads the version from the root
       # package.json and updates it, package-lock.json and CHANGELOG.md in the PR.
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@v5
         id: release
         with:
           release-type: node
