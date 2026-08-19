@@ -58,10 +58,24 @@ export function fetchVehicles(): Promise<{ vehicles: Vehicle[] }> {
   return get('/api/vehicles');
 }
 
-export function fetchTrips(vin: string | null): Promise<{ trips: Trip[]; total: number }> {
-  const query = new URLSearchParams({ limit: '500' });
+/** A time window for the archive. Both ends are optional and independent. */
+export interface TimeWindow {
+  from?: string;
+  to?: string;
+}
+
+function withWindow(query: URLSearchParams, vin: string | null, window: TimeWindow): string {
   if (vin) query.set('vin', vin);
-  return get(`/api/trips?${query}`);
+  if (window.from) query.set('from', window.from);
+  if (window.to) query.set('to', window.to);
+  return query.toString();
+}
+
+export function fetchTrips(
+  vin: string | null,
+  window: TimeWindow = {},
+): Promise<{ trips: Trip[]; total: number }> {
+  return get(`/api/trips?${withWindow(new URLSearchParams({ limit: '500' }), vin, window)}`);
 }
 
 /** Where a position came from. A requested fix is better evidence than a volunteered one. */
@@ -139,10 +153,8 @@ export function fetchPollRuns(): Promise<{ runs: PollRun[] }> {
   return get('/api/poll-runs?limit=1');
 }
 
-export function fetchSummary(vin: string | null): Promise<Summary> {
-  const query = new URLSearchParams();
-  if (vin) query.set('vin', vin);
-  return get(`/api/stats/summary?${query}`);
+export function fetchSummary(vin: string | null, window: TimeWindow = {}): Promise<Summary> {
+  return get(`/api/stats/summary?${withWindow(new URLSearchParams(), vin, window)}`);
 }
 
 export interface StatusSnapshot {

@@ -19,6 +19,10 @@ The web UI lists trips with date, distance, duration, kWh used and mi/kWh; click
 opens the full record — speeds, the per-system energy breakdown, moving vs. stopped time,
 start/end locations where they can be established, and the raw payload.
 
+A time filter above the table narrows both the list and the totals to the last 12h, 1d, 5d,
+1w or month, or to an exact start and end you pick; either end of a custom range may be
+left open. It filters on when a trip *started*, since that is what the archive is keyed by.
+
 The API call sequence is a direct TypeScript port of
 [BetterBlueKit](https://github.com/schmidtwmark/BetterBlueKit)'s `HyundaiUSAAPIClient`:
 

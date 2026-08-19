@@ -20,10 +20,12 @@ import type {
 } from './api.ts';
 import { EventTimeline } from './components/EventTimeline.tsx';
 import { LiveStatus } from './components/LiveStatus.tsx';
+import { RangeFilter } from './components/RangeFilter.tsx';
 import { StatTiles } from './components/StatTiles.tsx';
 import { TripTable } from './components/TripTable.tsx';
 import { TripModal } from './components/TripModal.tsx';
 import { formatDateTime } from './format.ts';
+import { DEFAULT_RANGE, resolveRange, type Range, type ResolvedRange } from './range.ts';
 
 /**
  * How each location outcome should read, and whether it deserves attention.
@@ -53,6 +55,14 @@ export function App() {
   const [status, setStatus] = useState<StatusSnapshot | null>(null);
   const [position, setPosition] = useState<Position | null>(null);
   const [events, setEvents] = useState<VehicleEvent[]>([]);
+  const [range, setRange] = useState<Range>(DEFAULT_RANGE);
+  /** The window the trips on screen were fetched for — see RangeFilter's `resolved`. */
+  const [fetchedWindow, setFetchedWindow] = useState<ResolvedRange>({});
+  /**
+   * Archive-wide, so the header keeps saying when archiving began no matter how the
+   * trip list is filtered. The tiles below are about the selection; this line is not.
+   */
+  const [archiveStart, setArchiveStart] = useState<string | null>(null);
 
   useEffect(() => {
     // A poller that is failing looks identical to an empty archive. Surface it.
@@ -75,11 +85,16 @@ export function App() {
     let cancelled = false;
     setLoading(true);
 
-    Promise.all([fetchTrips(selectedVin), fetchSummary(selectedVin)])
+    // Resolved once here, so the trips, the totals and the caption all describe the
+    // same window even though a preset's start depends on when it was asked.
+    const asked = resolveRange(range, new Date());
+
+    Promise.all([fetchTrips(selectedVin, asked), fetchSummary(selectedVin, asked)])
       .then(([tripResult, summaryResult]) => {
         if (cancelled) return;
         setTrips(tripResult.trips);
         setSummary(summaryResult);
+        setFetchedWindow(asked);
         setError(null);
       })
       .catch((cause: Error) => {
@@ -87,6 +102,22 @@ export function App() {
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedVin, range]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetchSummary(selectedVin)
+      .then((archive) => {
+        if (!cancelled) setArchiveStart(archive.first_trip_at);
+      })
+      .catch(() => {
+        if (!cancelled) setArchiveStart(null);
       });
 
     return () => {
@@ -130,8 +161,8 @@ export function App() {
         <div>
           <h1>Trip History</h1>
           <p className="subtitle">
-            {summary?.first_trip_at
-              ? `Archiving since ${formatDateTime(summary.first_trip_at)}`
+            {archiveStart
+              ? `Archiving since ${formatDateTime(archiveStart)}`
               : 'Local archive of every trip, well past the 4 Hyundai keeps.'}
           </p>
         </div>
@@ -183,14 +214,22 @@ export function App() {
         </p>
       )}
 
+      {/* Above the filter on purpose: the live panel is about the car now, and nothing
+          below the filter is. */}
       <LiveStatus status={status} position={position} />
+
+      <RangeFilter range={range} resolved={fetchedWindow} onChange={setRange} />
 
       <StatTiles summary={summary} />
 
       {loading ? (
         <p className="empty">Loading…</p>
       ) : (
-        <TripTable trips={trips} onSelect={setSelectedTripId} />
+        <TripTable
+          trips={trips}
+          onSelect={setSelectedTripId}
+          filtered={fetchedWindow.from !== undefined || fetchedWindow.to !== undefined}
+        />
       )}
 
       <EventTimeline events={events} />

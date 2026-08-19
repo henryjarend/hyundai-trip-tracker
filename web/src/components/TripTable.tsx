@@ -27,9 +27,15 @@ const COLUMNS: Column[] = [
 interface Props {
   trips: Trip[];
   onSelect: (id: number) => void;
+  /**
+   * Whether a time range is narrowing the list. An empty archive and an empty window
+   * need opposite advice — telling someone to go start the poller when it is running
+   * fine and they simply picked "12h" would send them debugging the wrong thing.
+   */
+  filtered: boolean;
 }
 
-export function TripTable({ trips, onSelect }: Props) {
+export function TripTable({ trips, onSelect, filtered }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>('start_date');
   const [ascending, setAscending] = useState(false);
 
@@ -65,8 +71,9 @@ export function TripTable({ trips, onSelect }: Props) {
   if (trips.length === 0) {
     return (
       <p className="empty">
-        No trips recorded yet. Run the poller, then drive somewhere — new trips appear within one
-        poll interval.
+        {filtered
+          ? 'No trips started in this time range. Widen it, or pick All to see the whole archive.'
+          : 'No trips recorded yet. Run the poller, then drive somewhere — new trips appear within one poll interval.'}
       </p>
     );
   }
