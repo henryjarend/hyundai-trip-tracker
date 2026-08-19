@@ -25,13 +25,30 @@ function clampInt(raw: string | undefined, fallback: number, max: number): numbe
   return Math.min(Math.floor(parsed), max);
 }
 
+/**
+ * `from` and `to` go into a `timestamptz` parameter, so an unparseable one would come
+ * back as a Postgres cast error dressed as a 503 — a database outage, as far as the UI
+ * can tell. Reject it here instead, where it is plainly the caller's fault.
+ */
+function invalidTimestamp(raw: string | undefined): boolean {
+  return raw !== undefined && raw !== '' && Number.isNaN(new Date(raw).getTime());
+}
+
+function timestampError(query: { from?: string; to?: string }): string | null {
+  const bad = (['from', 'to'] as const).find((key) => invalidTimestamp(query[key]));
+  return bad ? `Invalid ${bad} timestamp; expected an ISO 8601 instant` : null;
+}
+
 export async function registerRoutes(app: FastifyInstance): Promise<void> {
   app.get('/api/health', async () => ({ ok: true }));
 
   app.get('/api/vehicles', async () => ({ vehicles: await listVehicles() }));
 
-  app.get<{ Querystring: TripQueryString }>('/api/trips', async (request) => {
+  app.get<{ Querystring: TripQueryString }>('/api/trips', async (request, reply) => {
     const { vin, from, to } = request.query;
+    const invalid = timestampError(request.query);
+    if (invalid) return reply.status(400).send({ error: invalid });
+
     return listTrips({
       vin,
       from,
@@ -51,8 +68,11 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
     return trip;
   });
 
-  app.get<{ Querystring: TripQueryString }>('/api/stats/summary', async (request) => {
+  app.get<{ Querystring: TripQueryString }>('/api/stats/summary', async (request, reply) => {
     const { vin, from, to } = request.query;
+    const invalid = timestampError(request.query);
+    if (invalid) return reply.status(400).send({ error: invalid });
+
     return tripSummary(vin, from, to);
   });
 
