@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.1.0](https://github.com/henryjarend/hyundai-trip-tracker/compare/v1.0.0...v1.1.0) (2026-08-24)
+
+
+### Features
+
+* **web:** responsive layout and WCAG AA fixes ([23d1066](https://github.com/henryjarend/hyundai-trip-tracker/commit/23d10665edfa8fd8436e1cacb11a777ba5da9c87))
+* **web:** responsive layout and WCAG AA fixes ([c4a9179](https://github.com/henryjarend/hyundai-trip-tracker/commit/c4a91797ab9ed52410a5d05aff2e2e0cc50a752c))
+
+
+### Bug Fixes
+
+* **deps:** update dependency @fastify/static to v10 ([37c4392](https://github.com/henryjarend/hyundai-trip-tracker/commit/37c43926f9c559f7dbb5f9dedda0cd7c6b1ade37))
+* **deps:** update dependency undici to v8 ([19354c4](https://github.com/henryjarend/hyundai-trip-tracker/commit/19354c41e2e6967fd9a24c4c115142160f5754ed))
+
 ## 1.0.0 (2026-08-19)
 
 
