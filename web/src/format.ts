@@ -27,6 +27,26 @@ export function formatDateTime(iso: string | null | undefined): string {
 }
 
 /**
+ * The same instant without the year, for the narrow trip table where four columns have
+ * to fit inside a phone without a sideways scroller.
+ *
+ * Dropping the year is safe there and only there: the range filter above the table
+ * already bounds the window, and the full form — year included — is still what the wide
+ * table shows, what the row announces to a screen reader, and what the trip detail says.
+ */
+export function formatDateTimeShort(iso: string | null | undefined): string {
+  if (!iso) return '—';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '—';
+  return date.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
+/**
  * "12 min ago", "3 hr ago", "5 days ago".
  *
  * Used wherever staleness is the point — a position fix or an engine event is only

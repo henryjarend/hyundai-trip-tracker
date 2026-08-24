@@ -1,6 +1,12 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import type { Trip } from '../api.ts';
-import { formatDateTime, formatDuration, formatNumber, kwh } from '../format.ts';
+import {
+  formatDateTime,
+  formatDateTimeShort,
+  formatDuration,
+  formatNumber,
+  kwh,
+} from '../format.ts';
 
 type SortKey =
   | 'start_date'
@@ -12,15 +18,43 @@ type SortKey =
 interface Column {
   key: SortKey;
   label: string;
-  render: (trip: Trip) => string;
+  /** Header text below 640px, where the header row is the tightest thing on screen. */
+  shortLabel?: string;
+  /**
+   * Dropped below 640px so the remaining columns fit a phone without a sideways
+   * scroller. Duration is the only one of the five that is not part of what the archive
+   * is read for — distance, energy and efficiency — so it is the one that gives way, and
+   * it is still in the detail modal one tap away.
+   */
+  optional?: boolean;
+  render: (trip: Trip) => ReactNode;
 }
 
 // Deliberately minimal — everything else lives in the detail modal.
 const COLUMNS: Column[] = [
-  { key: 'start_date', label: 'Started', render: (t) => formatDateTime(t.start_date) },
+  {
+    key: 'start_date',
+    label: 'Started',
+    render: (t) => (
+      <>
+        <span className="wide-only">{formatDateTime(t.start_date)}</span>
+        <span className="narrow-only">{formatDateTimeShort(t.start_date)}</span>
+      </>
+    ),
+  },
   { key: 'distance_miles', label: 'Miles', render: (t) => formatNumber(t.distance_miles) },
-  { key: 'duration_seconds', label: 'Duration', render: (t) => formatDuration(t.duration_seconds) },
-  { key: 'energy_total_wh', label: 'kWh used', render: (t) => kwh(t.energy_total_wh) },
+  {
+    key: 'duration_seconds',
+    label: 'Duration',
+    optional: true,
+    render: (t) => formatDuration(t.duration_seconds),
+  },
+  {
+    key: 'energy_total_wh',
+    label: 'kWh used',
+    shortLabel: 'kWh',
+    render: (t) => kwh(t.energy_total_wh),
+  },
   { key: 'miles_per_kwh', label: 'mi/kWh', render: (t) => formatNumber(t.miles_per_kwh, 2) },
 ];
 
@@ -80,13 +114,18 @@ export function TripTable({ trips, onSelect, filtered }: Props) {
 
   return (
     <div className="table-wrap">
-      <table>
+      <table aria-label="Trip archive">
         <thead>
           <tr>
             {COLUMNS.map((column) => (
-              <th key={column.key}>
+              <th
+                key={column.key}
+                scope="col"
+                className={column.optional ? 'optional' : undefined}
+              >
                 <button type="button" onClick={() => toggleSort(column.key)}>
-                  {column.label}
+                  <span className="wide-only">{column.label}</span>
+                  <span className="narrow-only">{column.shortLabel ?? column.label}</span>
                   {sortKey === column.key ? (ascending ? ' ▲' : ' ▼') : ''}
                 </button>
               </th>
@@ -112,7 +151,14 @@ export function TripTable({ trips, onSelect, filtered }: Props) {
               }}
             >
               {COLUMNS.map((column) => (
-                <td key={column.key} className={column.key === 'start_date' ? 'left' : ''}>
+                <td
+                  key={column.key}
+                  className={
+                    [column.key === 'start_date' ? 'left' : '', column.optional ? 'optional' : '']
+                      .filter(Boolean)
+                      .join(' ') || undefined
+                  }
+                >
                   {column.render(trip)}
                 </td>
               ))}

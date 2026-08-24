@@ -70,13 +70,16 @@ export function LiveStatus({ status, position }: Props) {
   return (
     <section className="live">
       <div className="live-header">
-        <h3>Right now</h3>
+        <h2 className="section-title">Right now</h2>
         <span className="live-asof">
           as reported by the car {formatRelative(status.synced_at)}
         </span>
       </div>
 
-      <div className="tiles">
+      {/* Compact below 640px, identical to the summary tiles above it. The car's current
+          state is context, not the reason the page exists — at full tile size it costs
+          three rows and pushes the archive off a second screen. */}
+      <div className="tiles tiles-compact">
         {tiles.map((tile) => (
           <div className="tile" key={tile.label}>
             <div className="tile-label">{tile.label}</div>

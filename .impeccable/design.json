@@ -1,0 +1,541 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-24T13:54:25Z",
+  "title": "Design System: Hyundai Trip Tracker",
+  "extensions": {
+    "colorMeta": {
+      "instrument-blue": {
+        "role": "primary",
+        "displayName": "Instrument Blue",
+        "canonical": "oklch(55.4% 0.216 262)",
+        "tonalRamp": [
+          "oklch(15% 0.216 262)",
+          "oklch(26% 0.216 262)",
+          "oklch(37% 0.216 262)",
+          "oklch(48% 0.216 262)",
+          "oklch(59% 0.200 262)",
+          "oklch(70% 0.160 262)",
+          "oklch(82% 0.105 262)",
+          "oklch(95% 0.035 262)"
+        ]
+      },
+      "instrument-blue-dark": {
+        "role": "primary",
+        "displayName": "Instrument Blue (Dark Theme)",
+        "canonical": "oklch(71.5% 0.138 262)",
+        "tonalRamp": [
+          "oklch(15% 0.138 262)",
+          "oklch(26% 0.138 262)",
+          "oklch(37% 0.138 262)",
+          "oklch(48% 0.138 262)",
+          "oklch(59% 0.138 262)",
+          "oklch(70% 0.138 262)",
+          "oklch(82% 0.098 262)",
+          "oklch(95% 0.035 262)"
+        ]
+      },
+      "chart-paper": {
+        "role": "neutral",
+        "displayName": "Chart Paper",
+        "canonical": "oklch(97.3% 0.003 250)",
+        "tonalRamp": [
+          "oklch(15% 0.004 250)",
+          "oklch(26% 0.004 250)",
+          "oklch(37% 0.004 250)",
+          "oklch(48% 0.004 250)",
+          "oklch(59% 0.004 250)",
+          "oklch(70% 0.004 250)",
+          "oklch(82% 0.004 250)",
+          "oklch(95% 0.004 250)"
+        ]
+      },
+      "readout-surface": {
+        "role": "neutral",
+        "displayName": "Readout Surface",
+        "canonical": "oklch(100% 0 0)",
+        "tonalRamp": [
+          "oklch(15% 0 0)",
+          "oklch(26% 0 0)",
+          "oklch(37% 0 0)",
+          "oklch(48% 0 0)",
+          "oklch(59% 0 0)",
+          "oklch(70% 0 0)",
+          "oklch(82% 0 0)",
+          "oklch(95% 0 0)"
+        ]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "oklch(92.2% 0.006 250)",
+        "tonalRamp": [
+          "oklch(15% 0.006 250)",
+          "oklch(26% 0.006 250)",
+          "oklch(37% 0.006 250)",
+          "oklch(48% 0.006 250)",
+          "oklch(59% 0.006 250)",
+          "oklch(70% 0.006 250)",
+          "oklch(82% 0.006 250)",
+          "oklch(95% 0.006 250)"
+        ]
+      },
+      "recorded-ink": {
+        "role": "neutral",
+        "displayName": "Recorded Ink",
+        "canonical": "oklch(21.4% 0.008 250)",
+        "tonalRamp": [
+          "oklch(15% 0.008 250)",
+          "oklch(26% 0.008 250)",
+          "oklch(37% 0.008 250)",
+          "oklch(48% 0.008 250)",
+          "oklch(59% 0.008 250)",
+          "oklch(70% 0.008 250)",
+          "oklch(82% 0.008 250)",
+          "oklch(95% 0.008 250)"
+        ]
+      },
+      "annotation-grey": {
+        "role": "neutral",
+        "displayName": "Annotation Grey",
+        "canonical": "oklch(52.6% 0.018 250)",
+        "tonalRamp": [
+          "oklch(15% 0.018 250)",
+          "oklch(26% 0.018 250)",
+          "oklch(37% 0.018 250)",
+          "oklch(48% 0.018 250)",
+          "oklch(59% 0.018 250)",
+          "oklch(70% 0.018 250)",
+          "oklch(82% 0.018 250)",
+          "oklch(95% 0.014 250)"
+        ]
+      },
+      "panel-black": {
+        "role": "neutral",
+        "displayName": "Panel Black",
+        "canonical": "oklch(19.6% 0.008 250)",
+        "tonalRamp": [
+          "oklch(15% 0.008 250)",
+          "oklch(26% 0.008 250)",
+          "oklch(37% 0.008 250)",
+          "oklch(48% 0.008 250)",
+          "oklch(59% 0.008 250)",
+          "oklch(70% 0.008 250)",
+          "oklch(82% 0.008 250)",
+          "oklch(95% 0.008 250)"
+        ]
+      },
+      "readout-surface-dark": {
+        "role": "neutral",
+        "displayName": "Readout Surface (Dark Theme)",
+        "canonical": "oklch(24.5% 0.010 250)",
+        "tonalRamp": [
+          "oklch(15% 0.010 250)",
+          "oklch(26% 0.010 250)",
+          "oklch(37% 0.010 250)",
+          "oklch(48% 0.010 250)",
+          "oklch(59% 0.010 250)",
+          "oklch(70% 0.010 250)",
+          "oklch(82% 0.010 250)",
+          "oklch(95% 0.008 250)"
+        ]
+      },
+      "hairline-dark": {
+        "role": "neutral",
+        "displayName": "Hairline (Dark Theme)",
+        "canonical": "oklch(32.4% 0.014 250)",
+        "tonalRamp": [
+          "oklch(15% 0.014 250)",
+          "oklch(26% 0.014 250)",
+          "oklch(37% 0.014 250)",
+          "oklch(48% 0.014 250)",
+          "oklch(59% 0.014 250)",
+          "oklch(70% 0.014 250)",
+          "oklch(82% 0.014 250)",
+          "oklch(95% 0.010 250)"
+        ]
+      },
+      "recorded-ink-dark": {
+        "role": "neutral",
+        "displayName": "Recorded Ink (Dark Theme)",
+        "canonical": "oklch(93.2% 0.004 250)",
+        "tonalRamp": [
+          "oklch(15% 0.004 250)",
+          "oklch(26% 0.004 250)",
+          "oklch(37% 0.004 250)",
+          "oklch(48% 0.004 250)",
+          "oklch(59% 0.004 250)",
+          "oklch(70% 0.004 250)",
+          "oklch(82% 0.004 250)",
+          "oklch(95% 0.004 250)"
+        ]
+      },
+      "annotation-grey-dark": {
+        "role": "neutral",
+        "displayName": "Annotation Grey (Dark Theme)",
+        "canonical": "oklch(70.8% 0.016 250)",
+        "tonalRamp": [
+          "oklch(15% 0.016 250)",
+          "oklch(26% 0.016 250)",
+          "oklch(37% 0.016 250)",
+          "oklch(48% 0.016 250)",
+          "oklch(59% 0.016 250)",
+          "oklch(70% 0.016 250)",
+          "oklch(82% 0.016 250)",
+          "oklch(95% 0.012 250)"
+        ]
+      },
+      "fault-crimson": {
+        "role": "tertiary",
+        "displayName": "Fault Crimson",
+        "canonical": "oklch(53.6% 0.213 18)",
+        "note": "Stored as the CSS keyword `crimson` (#DC143C) on purpose. See the Meaning-Is-Not-Theme Rule: semantic colors are not part of the themeable token set.",
+        "tonalRamp": [
+          "oklch(15% 0.213 18)",
+          "oklch(26% 0.213 18)",
+          "oklch(37% 0.213 18)",
+          "oklch(48% 0.213 18)",
+          "oklch(59% 0.200 18)",
+          "oklch(70% 0.160 18)",
+          "oklch(82% 0.105 18)",
+          "oklch(95% 0.035 18)"
+        ]
+      },
+      "fault-crimson-dark": {
+        "role": "tertiary",
+        "displayName": "Fault Coral (Dark Theme)",
+        "canonical": "oklch(71.6% 0.128 22)",
+        "note": "Stored as the CSS keyword `lightcoral` (#F08080).",
+        "tonalRamp": [
+          "oklch(15% 0.128 22)",
+          "oklch(26% 0.128 22)",
+          "oklch(37% 0.128 22)",
+          "oklch(48% 0.128 22)",
+          "oklch(59% 0.128 22)",
+          "oklch(70% 0.128 22)",
+          "oklch(82% 0.098 22)",
+          "oklch(95% 0.035 22)"
+        ]
+      },
+      "caution-amber": {
+        "role": "tertiary",
+        "displayName": "Caution Amber",
+        "canonical": "oklch(74.6% 0.184 57)",
+        "note": "Stored as the CSS keyword `darkorange` (#FF8C00). Used at 12% fill / 40% border only — never as a solid.",
+        "tonalRamp": [
+          "oklch(15% 0.184 57)",
+          "oklch(26% 0.184 57)",
+          "oklch(37% 0.184 57)",
+          "oklch(48% 0.184 57)",
+          "oklch(59% 0.184 57)",
+          "oklch(70% 0.184 57)",
+          "oklch(82% 0.140 57)",
+          "oklch(95% 0.055 57)"
+        ]
+      },
+      "affirm-seagreen": {
+        "role": "secondary",
+        "displayName": "Affirm Seagreen",
+        "canonical": "oklch(45.1% 0.104 158)",
+        "note": "Stored as the literal #26744a. Deeper than the CSS seagreen keyword it replaced, which measured 4.25:1 on the light surface and 3.96:1 in its own tint. Still a literal, not a -- token: see the Meaning-Is-Not-Theme Rule.",
+        "tonalRamp": [
+          "oklch(15% 0.109 158)",
+          "oklch(26% 0.109 158)",
+          "oklch(37% 0.109 158)",
+          "oklch(48% 0.109 158)",
+          "oklch(59% 0.109 158)",
+          "oklch(70% 0.109 158)",
+          "oklch(82% 0.090 158)",
+          "oklch(95% 0.035 158)"
+        ]
+      },
+      "affirm-seagreen-dark": {
+        "role": "secondary",
+        "displayName": "Affirm Seagreen (Dark Theme)",
+        "canonical": "oklch(66.9% 0.132 156)",
+        "note": "Stored as the CSS keyword `mediumseagreen` (#3CB371).",
+        "tonalRamp": [
+          "oklch(15% 0.132 156)",
+          "oklch(26% 0.132 156)",
+          "oklch(37% 0.132 156)",
+          "oklch(48% 0.132 156)",
+          "oklch(59% 0.132 156)",
+          "oklch(70% 0.132 156)",
+          "oklch(82% 0.100 156)",
+          "oklch(95% 0.038 156)"
+        ]
+      },
+      "instrument-blue-ink": {
+        "role": "primary",
+        "displayName": "Instrument Blue Ink",
+        "canonical": "oklch(47.9% 0.187 262)",
+        "note": "The accent darkened for text on an accent tint (the selected range chip), where the plain accent reaches only 3.4:1. Identical to the accent in dark mode.",
+        "tonalRamp": [
+          "oklch(15% 0.216 262)",
+          "oklch(26% 0.216 262)",
+          "oklch(37% 0.216 262)",
+          "oklch(48% 0.216 262)",
+          "oklch(59% 0.200 262)",
+          "oklch(70% 0.160 262)",
+          "oklch(82% 0.105 262)",
+          "oklch(95% 0.035 262)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "The page title only. Its -0.02em tracking is the single typographic flourish in the system."
+      },
+      "readout": {
+        "displayName": "Readout",
+        "purpose": "Tile values — the largest number on the page and the first thing the eye should land on in any tile grid. Always tabular."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Modal heading at 17px; live-panel and timeline section headings step down to 15px at the same weight."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "The 16px reading size and the base below 640px. Table cells and fault-weight alert text. Also the hard floor for any focusable field: anything smaller makes iOS zoom the page on focus and never zoom back."
+      },
+      "body-dense": {
+        "displayName": "Body Dense",
+        "purpose": "The desk. Replaces Body as the base from 640px up, where density is worth more than legibility at arm's length. Also the live-panel and timeline section headings, at weight 700."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Content that is still a value but secondary — the subtitle, the vehicle select, modal detail rows."
+      },
+      "note": {
+        "displayName": "Note",
+        "purpose": "Content that comments on a value — poll notes, the caution banner, range chips, inputs, link buttons, timeline rows."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "12px uppercase, 0.06em, Annotation Grey. Tile labels, table column headers, modal section headings. Reserved — never used for content."
+      },
+      "micro": {
+        "displayName": "Micro",
+        "purpose": "11px Annotation Grey. Tile hints and detection-lag notes. The smallest size that carries words."
+      },
+      "tag": {
+        "displayName": "Tag",
+        "purpose": "10px uppercase, 0.04em. Provenance badges only (GPS FIX, CACHED)."
+      }
+    },
+    "shadows": [
+      {
+        "name": "overlay",
+        "value": "0 18px 48px rgba(0, 0, 0, 0.32)",
+        "purpose": "The trip detail modal, and nothing else. The only shadow in the entire stylesheet. A shadow means the element has left the document plane; anything that sits in the page uses a hairline and a surface tint instead."
+      },
+      {
+        "name": "modal-backdrop",
+        "value": "rgba(0, 0, 0, 0.45)",
+        "purpose": "Backdrop fill behind the modal. Not a shadow token proper, recorded here because it is the other half of the system's only depth event."
+      }
+    ],
+    "motion": [],
+    "breakpoints": [
+      {
+        "name": "desk",
+        "value": "640px",
+        "purpose": "The only width breakpoint in the system. Viewport rules are mobile-first, so this is where the desk is layered back on: 15px base, 20px gutter, 150px tile floor, the Duration column and the date's year returning, and the modal reverting from a bottom sheet to a centred dialog."
+      },
+      {
+        "name": "coarse-pointer",
+        "value": "@media (pointer: coarse)",
+        "purpose": "Not a width. Touch sizing is its own axis because a tablet with a keyboard and a laptop with a touchscreen both exist: 44px rows, grown sort headers and close control, and a 16px floor on every focusable field."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Readout Tile",
+      "kind": "card",
+      "refersTo": "tile",
+      "description": "The atom of the whole system: an uppercase label over a large tabular value, with an optional micro hint. Used identically for live vehicle state and archive summaries. An unknown value renders as an em dash, never as a plausible default.",
+      "html": "<div class=\"ds-tile\"><div class=\"ds-tile-label\">Battery</div><div class=\"ds-tile-value\">71%</div><div class=\"ds-tile-hint\">213 mi range</div></div><div class=\"ds-tile\"><div class=\"ds-tile-label\">Engine</div><div class=\"ds-tile-value\">&mdash;</div></div>",
+      "css": ".ds-tile { display: inline-block; min-width: 150px; background: var(--surface, #ffffff); border: 1px solid var(--border, #e2e5ea); border-radius: 10px; padding: 14px 16px; margin-right: 12px; font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif; } .ds-tile-label { color: var(--muted, #666d78); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; } .ds-tile-value { margin-top: 6px; font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text, #16191d); } .ds-tile-hint { color: var(--muted, #666d78); font-size: 11px; margin-top: 2px; }"
+    },
+    {
+      "name": "Range Chip",
+      "kind": "chip",
+      "refersTo": "chip-range",
+      "description": "A pill toggle for a time-range preset. Recessive at rest — muted text on a plain surface — and only lifts to full ink on hover. Carries aria-pressed, not href: these are toggles, not links.",
+      "html": "<button type=\"button\" class=\"ds-chip-range\" aria-pressed=\"false\">12h</button><button type=\"button\" class=\"ds-chip-range\" aria-pressed=\"false\">1w</button>",
+      "css": ".ds-chip-range { padding: 6px 12px; border: 1px solid var(--border, #e2e5ea); border-radius: 999px; background: var(--surface, #ffffff); color: var(--muted, #666d78); font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 13px; font-variant-numeric: tabular-nums; cursor: pointer; margin-right: 6px; } .ds-chip-range:hover { color: var(--text, #16191d); } .ds-chip-range:focus-visible { outline: 2px solid var(--accent, #1b6ef3); outline-offset: 1px; }"
+    },
+    {
+      "name": "Range Chip — Selected",
+      "kind": "chip",
+      "refersTo": "chip-range-selected",
+      "description": "The active range preset. Built with the Tint-and-Hairline formula: accent text, 45% accent border, 10% accent fill. This is the largest area of accent color anywhere in the system.",
+      "html": "<button type=\"button\" class=\"ds-chip-range-selected\" aria-pressed=\"true\">1w</button>",
+      "css": ".ds-chip-range-selected { padding: 6px 12px; border: 1px solid color-mix(in srgb, var(--accent, #1b6ef3) 45%, transparent); border-radius: 999px; background: color-mix(in srgb, var(--accent, #1b6ef3) 10%, transparent); color: var(--accent, #1b6ef3); font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 13px; font-variant-numeric: tabular-nums; cursor: pointer; } .ds-chip-range-selected:focus-visible { outline: 2px solid var(--accent, #1b6ef3); outline-offset: 1px; }"
+    },
+    {
+      "name": "Provenance Tag — GPS",
+      "kind": "chip",
+      "refersTo": "tag-gps",
+      "description": "A 10px micro-badge marking a position fix the poller requested directly from findMyCar. First-hand evidence is worth a color; it is the one place seagreen appears outside the event timeline.",
+      "html": "<span class=\"ds-tag-gps\" title=\"Requested from Hyundai (findMyCar) at a moment of our choosing\">GPS fix</span>",
+      "css": ".ds-tag-gps { font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; border-radius: 4px; padding: 1px 5px; white-space: nowrap; color: seagreen; border: 1px solid color-mix(in srgb, seagreen 40%, transparent); background: color-mix(in srgb, seagreen 10%, transparent); }"
+    },
+    {
+      "name": "Provenance Tag — Cached",
+      "kind": "chip",
+      "refersTo": "tag-cached",
+      "description": "The same badge for a position the car volunteered with its status rather than one we asked for. Colorless on purpose — the absence of the green is itself the signal.",
+      "html": "<span class=\"ds-tag-cached\" title=\"Taken from a status snapshot — whatever position the car last volunteered\">cached</span>",
+      "css": ".ds-tag-cached { font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; border-radius: 4px; padding: 1px 5px; white-space: nowrap; color: var(--muted, #666d78); border: 1px solid var(--border, #e2e5ea); }"
+    },
+    {
+      "name": "Alert — Caution",
+      "kind": "custom",
+      "refersTo": "alert-caution",
+      "description": "Degraded but not broken — a rate-limited location feed. Sits deliberately between the plain note and the fault banner in weight, so a stalled subsystem never reads as routine and never reads as an outage. Always states what is unaffected.",
+      "html": "<p class=\"ds-alert-caution\">location rate limited by Hyundai &mdash; backing off. Trips are unaffected &mdash; only position fixes pause.</p>",
+      "css": ".ds-alert-caution { font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif; background: color-mix(in srgb, darkorange 12%, transparent); border: 1px solid color-mix(in srgb, darkorange 40%, transparent); border-radius: 8px; padding: 10px 14px; margin: 0; font-size: 13px; color: var(--text, #16191d); }"
+    },
+    {
+      "name": "Alert — Fault",
+      "kind": "custom",
+      "refersTo": "alert-fault",
+      "description": "Broken and actionable: a failed poll or a failed load. Full body size, crimson tint and border. The heaviest element the page can produce.",
+      "html": "<p class=\"ds-alert-fault\">Last poll failed at 19 Aug 2026, 14:02: connect ETIMEDOUT</p>",
+      "css": ".ds-alert-fault { font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif; background: color-mix(in srgb, crimson 12%, transparent); border: 1px solid color-mix(in srgb, crimson 35%, transparent); border-radius: 8px; padding: 10px 14px; margin: 0; font-size: 15px; color: var(--text, #16191d); }"
+    },
+    {
+      "name": "Trip Table",
+      "kind": "custom",
+      "refersTo": "table-shell",
+      "description": "The archive itself. Right-aligned tabular columns with a left-aligned timestamp, sticky uppercase headers that double as sort buttons, and rows that are keyboard-reachable buttons opening the detail modal.",
+      "html": "<div class=\"ds-table-wrap\"><table class=\"ds-table\"><thead><tr><th><button type=\"button\">Started &#9660;</button></th><th><button type=\"button\">Miles</button></th><th><button type=\"button\">Duration</button></th><th><button type=\"button\">mi/kWh</button></th></tr></thead><tbody><tr class=\"ds-row\" tabindex=\"0\" role=\"button\"><td class=\"ds-left\">19 Aug 2026, 17:42</td><td>12.4</td><td>28m</td><td>3.61</td></tr><tr class=\"ds-row\" tabindex=\"0\" role=\"button\"><td class=\"ds-left\">19 Aug 2026, 08:15</td><td>9.1</td><td>21m</td><td>3.44</td></tr></tbody></table></div>",
+      "css": ".ds-table-wrap { background: var(--surface, #ffffff); border: 1px solid var(--border, #e2e5ea); border-radius: 10px; overflow-x: auto; font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif; } .ds-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 15px; color: var(--text, #16191d); } .ds-table th, .ds-table td { padding: 10px 14px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--border, #e2e5ea); } .ds-table th:first-child, .ds-table td.ds-left { text-align: left; } .ds-table tbody tr:last-child td { border-bottom: none; } .ds-table th { position: sticky; top: 0; background: var(--surface, #ffffff); font-size: 12px; color: var(--muted, #666d78); text-transform: uppercase; letter-spacing: 0.05em; } .ds-table th button { all: unset; cursor: pointer; font: inherit; color: inherit; } .ds-table th button:hover { color: var(--accent, #1b6ef3); } .ds-table tbody tr:hover td { background: color-mix(in srgb, var(--accent, #1b6ef3) 7%, transparent); } .ds-row { cursor: pointer; } .ds-row:focus-visible { outline: 2px solid var(--accent, #1b6ef3); outline-offset: -2px; }"
+    },
+    {
+      "name": "Seamed Timeline",
+      "kind": "custom",
+      "description": "A list of homogeneous records rendered as one object rather than a stack of cards: a 1px gap, no bottom border except on the last child, and radius only on the outer corners. The signature construction for any repeating record list in this system.",
+      "html": "<ul class=\"ds-timeline\"><li class=\"ds-timeline-item\"><span class=\"ds-event-kind ds-event-on\">Engine started</span><span class=\"ds-event-when\">2h ago</span><span class=\"ds-event-lag\">known 11 min later</span></li><li class=\"ds-timeline-item\"><span class=\"ds-event-kind ds-event-moved\">Moved</span><span class=\"ds-event-when\">2h ago</span><span class=\"ds-event-detail\">12.4 mi (odometer 8,431)</span></li><li class=\"ds-timeline-item\"><span class=\"ds-event-kind ds-event-off\">Engine stopped</span><span class=\"ds-event-when\">1h ago</span></li></ul>",
+      "css": ".ds-timeline { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1px; font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif; } .ds-timeline-item { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; padding: 8px 12px; background: var(--surface, #ffffff); border: 1px solid var(--border, #e2e5ea); border-bottom: none; font-size: 13px; color: var(--text, #16191d); } .ds-timeline-item:first-child { border-radius: 8px 8px 0 0; } .ds-timeline-item:last-child { border-bottom: 1px solid var(--border, #e2e5ea); border-radius: 0 0 8px 8px; } .ds-timeline-item:only-child { border-radius: 8px; } .ds-event-kind { font-weight: 600; min-width: 130px; } .ds-event-on { color: seagreen; } .ds-event-off { color: var(--muted, #666d78); } .ds-event-moved { color: var(--accent, #1b6ef3); } .ds-event-when { color: var(--muted, #666d78); font-variant-numeric: tabular-nums; } .ds-event-detail { font-variant-numeric: tabular-nums; } .ds-event-lag { color: var(--muted, #666d78); font-size: 11px; margin-left: auto; }"
+    },
+    {
+      "name": "Datetime Input",
+      "kind": "input",
+      "refersTo": "input-datetime",
+      "description": "The custom-range field. Sets font-family: inherit explicitly so native date controls do not fall back to the UA font, which is the one place this system would otherwise leak a second typeface.",
+      "html": "<label class=\"ds-field\">From<input class=\"ds-input-datetime\" type=\"datetime-local\" /></label>",
+      "css": ".ds-field { display: inline-flex; align-items: center; gap: 6px; color: var(--muted, #666d78); font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 13px; } .ds-input-datetime { padding: 6px 8px; border: 1px solid var(--border, #e2e5ea); border-radius: 8px; background: var(--surface, #ffffff); color: var(--text, #16191d); font-size: 13px; font-family: inherit; }"
+    },
+    {
+      "name": "Link Button",
+      "kind": "button",
+      "refersTo": "button-link",
+      "description": "Text that acts. Built from all: unset with only cursor, color, size and display added back, so it inherits nothing from the UA button and carries no box at all.",
+      "html": "<button type=\"button\" class=\"ds-btn-link\">Show raw payload</button>",
+      "css": ".ds-btn-link { all: unset; cursor: pointer; color: var(--accent, #1b6ef3); font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 13px; display: inline-block; } .ds-btn-link:hover { text-decoration: underline; } .ds-btn-link:focus-visible { outline: 2px solid var(--accent, #1b6ef3); outline-offset: 2px; border-radius: 2px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Flight Recorder",
+    "overview": "This is an instrument, not an interface. It logs faithfully and it never flatters. Every number on screen came off a car that syncs on its own schedule, through an API that returns a cached view, and the design's entire job is to present those numbers at full precision while never once letting them pass as fresher or more certain than they are. The caveat is part of the reading. It is not a footnote, not a tooltip-only afterthought, and not something the layout apologises for — \"as reported by the car 14 min ago\" sits on the same line as the heading it qualifies.\n\nThe register is precise, sober and unhedged, and at the same time calm and unhurried. Those are not in tension here: the page states limits directly because that is the accurate thing to do, and it does so without alarm. Contrast is low, borders are hairlines, there is exactly one accent hue and no motion anywhere in the system. Nothing pulses, slides, or asks for attention. It is a page you can leave open on a second monitor for a week.\n\nRestraint does the expressive work. There is no webfont, no illustration, no gradient, no icon set, and one shadow in the entire stylesheet. What is left is typography and alignment, and those are handled with care: tabular numerals everywhere a digit can appear, a type scale that descends as certainty descends, and a radius scale that tracks the size of the thing it rounds. The craft is legible to anyone who looks closely and invisible to anyone who doesn't, which is the correct ratio for an instrument.",
+    "keyCharacteristics": [
+      "One accent hue, used on well under 10% of any screen, and never as a large fill",
+      "Absolutely flat — depth exists only for things that leave the document plane",
+      "Tabular numerals on every element that can hold a number",
+      "A six-token palette per theme, plus three semantic colors that deliberately sit outside it",
+      "System font stack only; no webfont is loaded and none should be",
+      "Zero motion: no transitions, no animation, no easing tokens",
+      "Every uncertain value carries its provenance and its age in adjacent muted type"
+    ],
+    "rules": [
+      {
+        "name": "The Tint-and-Hairline Rule",
+        "body": "A colored surface is never a solid fill. It is a color-mix of its hue at 10–12% over transparent, outlined by the same hue at 35–45%. That single formula produces every tinted element in the system — the error banner, the caution banner, the selected range chip, the GPS provenance tag, the table row hover — and it is why colored areas never overpower a page whose default state is grey.",
+        "section": "colors"
+      },
+      {
+        "name": "The Meaning-Is-Not-Theme Rule",
+        "body": "Crimson, amber and seagreen are not tokens and must not be tokenised into the -- palette. Restyling the theme must never be able to restyle what a failure looks like.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Needle Rule",
+        "body": "Instrument Blue appears on well under 10% of any screen and never as a solid fill larger than a focus ring. If a new element wants the accent, first check whether it is interactive, selected, or moving. If it is none of those, it gets Annotation Grey.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tabular Rule",
+        "body": "Every element that can contain a digit sets font-variant-numeric: tabular-nums — the whole table, tile values, detail values, event times, event details, range chips. Columns of numbers must never shift width as they update. This is non-negotiable and is the cheapest thing in the system that makes it look engineered.",
+        "section": "typography"
+      },
+      {
+        "name": "The Caveat Ladder",
+        "body": "Type size descends as certainty descends: 16px reads, 15px packs, 14px details, 13px comments, 12px labels, 11px qualifies, 10px attributes. A caveat rendered at body size is a bug, and so is a value rendered at 11px. Where a reading needs a qualification, the qualification goes adjacent and smaller, never in place of the value.",
+        "section": "typography"
+      },
+      {
+        "name": "The No-Sideways-Scroll Rule",
+        "body": "The trip table fits the viewport at every width; it is never placed in a horizontal scroller. This is not a preference — an overflow-x on the table wrapper silently makes it a scroll container on both axes, and the sticky column headers then anchor to a box that never scrolls and never move again. Columns give way instead, and a long value wraps.",
+        "section": "layout"
+      },
+      {
+        "name": "The Label Case Rule",
+        "body": "12px + uppercase + 0.06em + Annotation Grey means \"this is a label.\" That combination is reserved. Never set content in it, and never set a label without it.",
+        "section": "typography"
+      },
+      {
+        "name": "The Filter Boundary Rule",
+        "body": "The range filter is a horizon line. Nothing above it may be affected by the selected window, and everything below it must be. Placing a windowed value above the filter, or an archive-wide value below it, breaks the page's central promise about what the numbers mean.",
+        "section": "layout"
+      },
+      {
+        "name": "The Floats-Above-the-Record Rule",
+        "body": "A shadow means \"this has left the document plane.\" Exactly one thing does that today — the trip modal — and a shadow is reserved for anything that genuinely does the same. Nothing that sits in the page ever gets one. A tile, a card, a table, a banner or a hover state that reaches for elevation is reaching for the wrong tool: the answer is a hairline and a surface tint, forever.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Radius-Tracks-Size Rule",
+        "body": "Corner radius grows with the surface it rounds: 4px on an inline code chip and a provenance tag, 6px on an icon-sized button, 8px on inputs, alerts, code blocks and list items, 10px on tiles and the table shell, 12px on the modal. Pick the radius from the element's footprint, not from taste. The one exception is the fully rounded 999px range chip, where the pill shape is doing semantic work — it reads as a toggle rather than a field.",
+        "section": "shapes"
+      },
+      {
+        "name": "The Seamed List Rule",
+        "body": "A vertical list of records is one object, not a stack of cards. The event timeline achieves this with a 1px gap, border-bottom: none on every item, the bottom border restored on the last child, and radius applied only to the first and last corners — with an :only-child case so a single item is still a complete card. Any new list of homogeneous records follows the same construction.",
+        "section": "shapes"
+      },
+      {
+        "name": "The Three Weights Rule",
+        "body": "A degraded subsystem is never a clause appended to a reassuring line. When something is only partly wrong, it gets its own element at its own weight, and the sentence says what is unaffected as well as what is not.",
+        "section": "components"
+      },
+      {
+        "name": "The Unset Rule",
+        "body": "A button that should read as text starts from all: unset, never from overriding background, border and padding one property at a time. all: unset also strips the UA focus ring and returns display to inline, so every control built that way owes back a :focus-visible outline (2px solid var(--accent), 2px offset, 4px radius) and a display that can hold a touch target.",
+        "section": "components"
+      }
+    ],
+    "dos": [
+      "Do attach provenance and age to any value the car did not report just now — adjacent, smaller, in Annotation Grey. The Caveat Ladder is the mechanism.",
+      "Do set font-variant-numeric: tabular-nums on anything that can hold a digit.",
+      "Do build every new tinted surface with the Tint-and-Hairline formula (10–12% fill, 35–45% border, same hue).",
+      "Do render an unknown value as —. Never let a missing field default to a plausible reading.",
+      "Do pick corner radius from the element's footprint per the Radius-Tracks-Size Rule.",
+      "Do define every new color in both :root and the prefers-color-scheme: dark block. Dark mode is a first-class theme here, not an inversion — the accent, the seagreen and the crimson all take genuinely different values.",
+      "Do give a partly-degraded subsystem its own element at Caution weight.",
+      "Do start text-styled buttons from all: unset."
+    ],
+    "donts": [
+      "Don't add a shadow to anything that stays in the document plane. Tonal layering is the depth system; the modal is the one documented exception.",
+      "Don't load a webfont, add an icon library, or introduce a display typeface. The system font stack and a handful of literal glyphs (▲ ▼ ✕ · →) are the entire vocabulary.",
+      "Don't add motion. There is no transition, animation or easing anywhere in the system, and a page meant to sit open for days should not move on its own.",
+      "Don't introduce a second accent hue. If something needs to stand out and is not interactive, selected, or moving, it needs Annotation Grey and better placement.",
+      "Don't tokenise crimson, darkorange or seagreen into the -- palette. Meaning is not theme.",
+      "Don't put a window-filtered value above the range filter, or an archive-wide value below it.",
+      "Don't use the 12px-uppercase-tracked-muted combination for anything that is not a label.",
+      "Don't show a route, a path, a map tile, or any geographic rendering beyond a coordinate pair linking out to OpenStreetMap. The API returns no route data of any kind and the design must not imply otherwise."
+    ]
+  }
+}

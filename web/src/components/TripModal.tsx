@@ -51,6 +51,17 @@ function LocationBlock({ label, location }: { label: string; location: TripLocat
       ? ' · at the trip boundary'
       : ` · ${location.minutes_away} min ${side}`;
 
+  // The town name is the *nearest* one and can sit well away from the actual coordinate.
+  // That caveat used to live only in the link's `title`, which a touch device can never
+  // reveal — so once the gap is big enough to change how the name should be read, it
+  // stops being a hover detail and becomes part of the reading.
+  const townOff =
+    location.label !== null &&
+    location.place_distance_miles !== null &&
+    location.place_distance_miles >= 2
+      ? ` · town ${location.place_distance_miles.toFixed(1)} mi off`
+      : '';
+
   return (
     <div className="detail-row">
       <span className="detail-label">{label}</span>
@@ -72,6 +83,7 @@ function LocationBlock({ label, location }: { label: string; location: TripLocat
           }
         >
           {hint}
+          {townOff}
         </span>
         <span className={`source-tag ${requested ? 'source-gps' : 'source-cached'}`} title={sourceTitle}>
           {requested ? 'GPS fix' : 'cached'}
