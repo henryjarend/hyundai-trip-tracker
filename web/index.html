@@ -2,7 +2,14 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover lets the page paint under a notch; every edge that content
+         reaches is padded with env(safe-area-inset-*) in styles.css. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- So the UA paints the right ground before the stylesheet arrives, and the mobile
+         browser chrome matches the page instead of framing it in white. -->
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#14171b" media="(prefers-color-scheme: dark)" />
     <title>Ioniq 5 Trip History</title>
   </head>
   <body>

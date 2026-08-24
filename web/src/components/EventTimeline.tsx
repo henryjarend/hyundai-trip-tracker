@@ -44,8 +44,8 @@ function describe(event: VehicleEvent): string | null {
 export function EventTimeline({ events }: Props) {
   if (events.length === 0) {
     return (
-      <section>
-        <h3>Recent activity</h3>
+      <section className="events">
+        <h2 className="section-title">Recent activity</h2>
         <p className="section-note">
           Nothing detected yet. Events appear once the poller sees a field change between
           two status readings — there is no push notification from Hyundai to wait on.
@@ -55,8 +55,8 @@ export function EventTimeline({ events }: Props) {
   }
 
   return (
-    <section>
-      <h3>Recent activity</h3>
+    <section className="events">
+      <h2 className="section-title">Recent activity</h2>
       <p className="section-note">
         Inferred by comparing consecutive status readings, so the timing follows the car's
         own sync schedule rather than the poll interval. A short trip that starts and ends

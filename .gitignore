@@ -6,3 +6,6 @@ dist/
 .env
 .env.*
 !.env.example
+
+# impeccable design-hook session cache (session-scoped, absolute paths)
+.impeccable/hook.cache.json

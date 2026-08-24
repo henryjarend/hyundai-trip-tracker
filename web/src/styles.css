@@ -1,3 +1,9 @@
+/* Viewport-dependent rules in this file are written mobile-first: the base value is the
+   phone, and `@media (min-width: 640px)` layers the desktop back on. Everything without a
+   viewport dimension — colour, radius, borders, weight — is stated once and holds
+   everywhere. Touch sizing is a separate axis from width and uses `pointer: coarse`,
+   because a tablet with a keyboard and a laptop with a touchscreen both exist. */
+
 :root {
   --bg: #f6f7f9;
   --surface: #ffffff;
@@ -5,7 +11,14 @@
   --text: #16191d;
   --muted: #666d78;
   --accent: #1b6ef3;
+  /* The accent as *text on an accent tint*. The plain accent clears 4.5:1 on a white
+     surface but only reaches ~3.4:1 on its own 10% wash, which is exactly where the
+     selected range chip puts it. Dark mode needs no such pair — its lighter accent
+     already passes on the darker wash. */
+  --accent-ink: #1459cc;
   color-scheme: light dark;
+  /* Native controls — the date pickers especially — otherwise pick their own blue. */
+  accent-color: var(--accent);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -16,6 +29,7 @@
     --text: #e8eaed;
     --muted: #9aa2ad;
     --accent: #63a4ff;
+    --accent-ink: #63a4ff;
   }
 }
 
@@ -23,18 +37,31 @@
   box-sizing: border-box;
 }
 
+html {
+  /* The grey flash a mobile browser paints on tap belongs to no design system. Touch
+     feedback is authored below with :active instead. */
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
   font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  font-size: 15px;
+  /* 16px is the floor that keeps iOS from zooming the page when a field takes focus, and
+     it is the right size to read at arm's length in a driveway. The desk gets 15px back
+     at 640px, where density is worth more than legibility at distance. */
+  font-size: 16px;
 }
 
 main {
   max-width: 1180px;
   margin: 0 auto;
-  padding: 32px 20px 64px;
+  padding-top: 24px;
+  /* max() rather than a bare env(): the inset is 0 on everything without a notch. */
+  padding-bottom: max(48px, env(safe-area-inset-bottom));
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
 }
 
 header {
@@ -69,7 +96,9 @@ select {
 
 .tiles {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  /* 130px so two tiles still fit side by side at 320px; 150px from 640px up. A single
+     column of six full-width tiles is a worse read than two snug ones. */
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   gap: 12px;
   margin-bottom: 24px;
 }
@@ -95,11 +124,15 @@ select {
   font-variant-numeric: tabular-nums;
 }
 
+/* No `overflow` here, deliberately. Setting overflow-x makes overflow-y compute to auto
+   as well, which turns this into a scroll container with no height limit — and the
+   sticky column headers below then stick to a box that never scrolls, so they never
+   move. The table is instead made to fit at every width: Duration drops out below 640px
+   and the date loses its year, so there is nothing to scroll sideways. */
 .table-wrap {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 10px;
-  overflow-x: auto;
 }
 
 table {
@@ -108,9 +141,12 @@ table {
   font-variant-numeric: tabular-nums;
 }
 
+/* 6px of side padding below 640px, not 8: a two-digit twelve-hour time ("Aug 17,
+   12:48 PM") is the widest date the locale produces, and those few pixels are what let
+   it stay on one line instead of wrapping that single row to double height. */
 th,
 td {
-  padding: 10px 14px;
+  padding: 12px 6px;
   text-align: right;
   white-space: nowrap;
   border-bottom: 1px solid var(--border);
@@ -121,13 +157,32 @@ td.left {
   text-align: left;
 }
 
+/* The one pressure valve now that the table no longer scrolls sideways: an unusually
+   long locale date wraps rather than pushing the whole page into horizontal scroll. */
+td.left {
+  white-space: normal;
+}
+
 tbody tr:last-child td {
   border-bottom: none;
+}
+
+/* The wrapper no longer clips, so the last row's hover wash has to respect its corners
+   itself. */
+tbody tr:last-child td:first-child {
+  border-bottom-left-radius: 10px;
+}
+
+tbody tr:last-child td:last-child {
+  border-bottom-right-radius: 10px;
 }
 
 th {
   position: sticky;
   top: 0;
+  /* Sticky alone does not raise an element; without this the scrolled rows paint over
+     the header. */
+  z-index: 1;
   background: var(--surface);
   font-size: 12px;
   color: var(--muted);
@@ -140,14 +195,17 @@ th button {
   cursor: pointer;
   font: inherit;
   color: inherit;
+  /* `all: unset` returns display to inline, where vertical padding buys no height. The
+     coarse-pointer rule below needs somewhere to put a tap target. */
+  display: inline-block;
 }
 
-th button:hover {
-  color: var(--accent);
-}
-
-tbody tr:hover td {
-  background: color-mix(in srgb, var(--accent) 7%, transparent);
+/* `all: unset` also removes the UA focus ring, so every control built that way has to
+   put one back — these five sort controls were the one place that never did. */
+th button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 tr.clickable {
@@ -159,31 +217,76 @@ tr.clickable:focus-visible {
   outline-offset: -2px;
 }
 
+/* Hover is guarded throughout: on a touch screen an unguarded :hover latches after a tap
+   and stays lit on a row the reader has already left. */
+@media (hover: hover) {
+  th button:hover {
+    color: var(--accent);
+  }
+
+  tbody tr:hover td {
+    background: color-mix(in srgb, var(--accent) 7%, transparent);
+  }
+}
+
+@media (hover: none) {
+  tr.clickable:active td {
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+  }
+}
+
 .empty {
   color: var(--muted);
   padding: 28px 4px;
 }
 
+/* Columns that give way below 640px. Duration is the only one of the five that is not
+   part of what the archive is read for — distance, energy, efficiency — and it is still
+   in the detail modal. */
+th.optional,
+td.optional {
+  display: none;
+}
+
+/* Two renderings of the same value, swapped by width rather than by script: the wide
+   table keeps the year, the narrow one drops it. */
+.wide-only {
+  display: none;
+}
+
 /* --- Trip detail modal --- */
 
+/* A bottom sheet on a phone and a centred dialog from 640px up. Same element, same
+   content, the arrangement each context expects. */
 .modal-backdrop {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.45);
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
-  padding: 20px;
+  padding: 0;
+  /* In landscape on a notched phone the sheet would otherwise run under the cutout. */
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
   z-index: 10;
 }
 
 .modal {
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  width: min(620px, 100%);
-  max-height: 88vh;
+  border-bottom: none;
+  border-radius: 12px 12px 0 0;
+  width: 100%;
+  max-height: 92vh;
+  /* dvh discounts the mobile browser chrome; vh above is the fallback. */
+  max-height: 92dvh;
+  padding-bottom: env(safe-area-inset-bottom);
   overflow-y: auto;
+  /* Scrolling to the end of the payload must not start scrolling the archive behind it. */
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
 }
 
@@ -208,15 +311,26 @@ tr.clickable:focus-visible {
 .close {
   all: unset;
   cursor: pointer;
+  /* Inline by way of `all: unset`, so the padding below would buy no height and the
+     coarse-pointer rule would have nothing to grow. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 4px 8px;
   border-radius: 6px;
   color: var(--muted);
 }
 
-.close:hover,
 .close:focus-visible {
   background: var(--surface);
   color: var(--text);
+}
+
+@media (hover: hover) {
+  .close:hover {
+    background: var(--surface);
+    color: var(--text);
+  }
 }
 
 .modal-body {
@@ -262,6 +376,9 @@ tr.clickable:focus-visible {
 .detail-value {
   font-variant-numeric: tabular-nums;
   text-align: right;
+  /* The location rows carry a link, a hint and a provenance tag in one value; at phone
+     width that has to be allowed to wrap instead of forcing the row wide. */
+  min-width: 0;
 }
 
 .detail-value a {
@@ -282,8 +399,18 @@ tr.clickable:focus-visible {
   display: inline-block;
 }
 
-.link:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .link:hover {
+    text-decoration: underline;
+  }
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  /* The smallest step on the radius scale; the ring just needs to not be a hard box
+     around text. */
+  border-radius: 4px;
 }
 
 .raw {
@@ -292,6 +419,9 @@ tr.clickable:focus-visible {
   border-radius: 8px;
   padding: 12px;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
   font-size: 12px;
   margin-top: 8px;
 }
@@ -308,6 +438,8 @@ tr.clickable:focus-visible {
   border-radius: 4px;
   padding: 1px 5px;
   font-size: 12px;
+  /* The curl line in the no-poll-yet note is longer than a phone is wide. */
+  overflow-wrap: anywhere;
 }
 
 .error {
@@ -342,9 +474,19 @@ tr.clickable:focus-visible {
   margin-bottom: 10px;
 }
 
-.live-header h3 {
-  margin: 0;
+/* Both section headings on the page — "Right now" and "Recent activity" — are the same
+   role and now say so. The timeline's had no rule at all and was falling through to the
+   UA default, which made two same-level headings render at different sizes. */
+.section-title {
+  margin: 0 0 8px;
   font-size: 15px;
+  font-weight: 700;
+}
+
+/* In the live header the heading shares a baseline row with the "as reported" line, so
+   the spacing belongs to the row, not the heading. */
+.live-header .section-title {
+  margin: 0;
 }
 
 /* The car decides when to sync, so "right now" is always somewhat stale. Saying how
@@ -358,6 +500,45 @@ tr.clickable:focus-visible {
   color: var(--muted);
   font-size: 11px;
   margin-top: 2px;
+}
+
+/* The live panel's tiles, below 640px only — the same readout at a smaller scale.
+   At full size its six tiles take three rows and push the trip table, which is what
+   the page is actually for, onto a second screen. Three across in two short rows keeps
+   the car's current state glanceable without it leading. Identical to `.tiles` from
+   640px up, where one row costs nothing. */
+/* 140px, not less: the widest live value is "Unplugged" at 17px, and a narrower track
+   makes it escape the tile rather than wrap. This yields two columns on every phone
+   width and three from about 600px, which is where the desk rules take over anyway. */
+.tiles-compact {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.tiles-compact .tile {
+  padding: 10px 12px;
+}
+
+.tiles-compact .tile-label {
+  font-size: 11px;
+  letter-spacing: 0.05em;
+}
+
+.tiles-compact .tile-value {
+  font-size: 17px;
+  margin-top: 3px;
+}
+
+.tiles-compact .tile-hint {
+  font-size: 10px;
+  /* The last-fix coordinates are one long unbroken token in a 100px tile. */
+  overflow-wrap: anywhere;
+}
+
+/* The default h3 margin used to be what separated this block from the table above it;
+   now that the heading is a styled h2 with no top margin, the section carries it. */
+.events {
+  margin-top: 28px;
 }
 
 .timeline {
@@ -399,13 +580,19 @@ tr.clickable:focus-visible {
   min-width: 130px;
 }
 
+/* A deeper seagreen than the CSS keyword, which lands at 4.25:1 on the light surface and
+   3.96:1 inside its own tint — both short of 4.5. Still a literal rather than a `--`
+   token: the Meaning-Is-Not-Theme Rule keeps semantic colour out of the themeable
+   palette, so light and dark each state their own value. */
 .event-engine_on,
-.event-charge_start {
-  color: seagreen;
+.event-charge_start,
+.event-plugged_in {
+  color: #26744a;
 }
 
 .event-engine_off,
-.event-charge_stop {
+.event-charge_stop,
+.event-unplugged {
   color: var(--muted);
 }
 
@@ -415,7 +602,8 @@ tr.clickable:focus-visible {
 
 @media (prefers-color-scheme: dark) {
   .event-engine_on,
-  .event-charge_start {
+  .event-charge_start,
+  .event-plugged_in {
     color: mediumseagreen;
   }
 }
@@ -449,9 +637,9 @@ tr.clickable:focus-visible {
 }
 
 .source-gps {
-  color: seagreen;
-  border-color: color-mix(in srgb, seagreen 40%, transparent);
-  background: color-mix(in srgb, seagreen 10%, transparent);
+  color: #26744a;
+  border-color: color-mix(in srgb, #26744a 40%, transparent);
+  background: color-mix(in srgb, #26744a 10%, transparent);
 }
 
 .source-cached {
@@ -493,12 +681,20 @@ tr.clickable:focus-visible {
   cursor: pointer;
 }
 
-.range-chip:hover {
-  color: var(--text);
+@media (hover: hover) {
+  .range-chip:hover {
+    color: var(--text);
+  }
+}
+
+@media (hover: none) {
+  .range-chip:active {
+    color: var(--text);
+  }
 }
 
 .range-chip.selected {
-  color: var(--accent);
+  color: var(--accent-ink);
   border-color: color-mix(in srgb, var(--accent) 45%, transparent);
   background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
@@ -513,6 +709,9 @@ tr.clickable:focus-visible {
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
+  /* On a phone the two datetime fields each want most of the width, so the group takes
+     the row and each label lays its field out opposite its name. */
+  width: 100%;
 }
 
 .range-custom label {
@@ -521,6 +720,8 @@ tr.clickable:focus-visible {
   gap: 6px;
   color: var(--muted);
   font-size: 13px;
+  flex: 1 1 100%;
+  justify-content: space-between;
 }
 
 .range-custom input {
@@ -531,6 +732,7 @@ tr.clickable:focus-visible {
   color: var(--text);
   font-size: 13px;
   font-family: inherit;
+  min-width: 0;
 }
 
 .range-custom .link {
@@ -558,4 +760,143 @@ tr.clickable:focus-visible {
 .range-note {
   font-size: 12px;
   opacity: 0.75;
+}
+
+/* --- From 640px up: the desk --- */
+
+@media (min-width: 640px) {
+  body {
+    font-size: 15px;
+  }
+
+  main {
+    padding-top: 32px;
+    padding-bottom: max(64px, env(safe-area-inset-bottom));
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+  }
+
+  .tiles {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+
+  /* From here up the live panel is one row, so it goes back to being the same tile as
+     the summary grid in every respect. */
+  .tiles-compact {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+  }
+
+  .tiles-compact .tile {
+    padding: 14px 16px;
+  }
+
+  .tiles-compact .tile-label {
+    font-size: 12px;
+    letter-spacing: 0.06em;
+  }
+
+  .tiles-compact .tile-value {
+    font-size: 22px;
+    margin-top: 6px;
+  }
+
+  .tiles-compact .tile-hint {
+    font-size: 11px;
+  }
+
+  th,
+  td {
+    padding: 10px 14px;
+  }
+
+  td.left {
+    white-space: nowrap;
+  }
+
+  th.optional,
+  td.optional {
+    display: table-cell;
+  }
+
+  .wide-only {
+    display: inline;
+  }
+
+  .narrow-only {
+    display: none;
+  }
+
+  .modal-backdrop {
+    align-items: center;
+    padding: 20px;
+  }
+
+  .modal {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    width: min(620px, 100%);
+    max-height: 88vh;
+    padding-bottom: 0;
+  }
+
+  .range-custom {
+    width: auto;
+  }
+
+  .range-custom label {
+    flex: 0 1 auto;
+    justify-content: flex-start;
+  }
+}
+
+/* --- Touch, at any width --- */
+
+@media (pointer: coarse) {
+  /* Anything under 16px makes iOS zoom the page the moment the field takes focus, and
+     it never zooms back out on its own. */
+  select,
+  .range-custom input {
+    font-size: 16px;
+  }
+
+  /* 44px rows. The whole row is the control that opens the trip, so it is the one that
+     has to be comfortably hittable. */
+  tbody td {
+    padding-top: 13px;
+    padding-bottom: 13px;
+  }
+
+  /* The sort control is the header label itself — `all: unset` leaves it exactly as big
+     as its glyphs. Move the cell's vertical padding into the button and set the height
+     on the button, so the target is a real 44px rather than whatever the 12px label
+     plus padding happens to add up to. */
+  th {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  th button {
+    min-height: 44px;
+    align-items: center;
+  }
+
+  .range-chip {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 16px;
+  }
+
+  .close {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .link {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
 }
