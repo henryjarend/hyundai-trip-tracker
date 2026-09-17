@@ -254,6 +254,87 @@ td.optional {
   display: none;
 }
 
+/* --- Paged list headers --- */
+
+/* Same shape as the live panel's header, and shared by the trip archive and the activity
+   timeline: heading and its caption on one baseline row, so the spacing belongs to the
+   row rather than the heading. */
+.list-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.list-header .section-title {
+  margin: 0;
+}
+
+/* Each list shows ten rows, so how much there is in total has to be said somewhere. */
+.list-count {
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The note sits under the header row, which already carries the gap. */
+.list-header + .section-note {
+  margin-bottom: 0;
+}
+
+/* --- Pagination --- */
+
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 2px 0;
+}
+
+.pager-count {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pager-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pager-size {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.pager-size select {
+  padding: 5px 8px;
+  font-size: 13px;
+}
+
+.pager-page {
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The chips at either end of the range stay in place while unusable: removing them would
+   shuffle the two that remain under the reader's pointer. */
+.range-chip:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
 /* --- Trip detail modal --- */
 
 /* A bottom sheet on a phone and a centred dialog from 640px up. Same element, same
@@ -856,6 +937,9 @@ td.optional {
   /* Anything under 16px makes iOS zoom the page the moment the field takes focus, and
      it never zooms back out on its own. */
   select,
+  /* Listed explicitly: `.pager-size select` outranks the bare `select` above it, so the
+     page-size control would keep its 13px and trigger exactly that zoom. */
+  .pager-size select,
   .range-custom input {
     font-size: 16px;
   }

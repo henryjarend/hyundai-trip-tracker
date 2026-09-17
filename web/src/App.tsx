@@ -134,7 +134,9 @@ export function App() {
     void Promise.allSettled([
       fetchLatestStatus(selectedVin),
       fetchPositions(selectedVin, 1),
-      fetchEvents(selectedVin, 25),
+      // Ten are on screen; the rest are what the pager under the timeline pages back
+      // through, so the fetch has to be deeper than the page.
+      fetchEvents(selectedVin, 100),
     ]).then(([statusResult, positionResult, eventResult]) => {
       if (cancelled) return;
       setStatus(

@@ -1,5 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import type { Trip } from '../api.ts';
+import { Pager, usePager } from './Pager.tsx';
 import {
   formatDateTime,
   formatDateTimeShort,
@@ -93,6 +94,10 @@ export function TripTable({ trips, onSelect, filtered }: Props) {
     return copy;
   }, [trips, sortKey, ascending]);
 
+  // Paged over `sorted`, not `trips`: the sort is what the reader chose, so page 1 must
+  // be the top of it rather than the first ten rows Hyundai happened to send.
+  const pager = usePager(sorted);
+
   function toggleSort(key: SortKey) {
     if (key === sortKey) {
       setAscending((previous) => !previous);
@@ -113,59 +118,76 @@ export function TripTable({ trips, onSelect, filtered }: Props) {
   }
 
   return (
-    <div className="table-wrap">
-      <table aria-label="Trip archive">
-        <thead>
-          <tr>
-            {COLUMNS.map((column) => (
-              <th
-                key={column.key}
-                scope="col"
-                className={column.optional ? 'optional' : undefined}
-              >
-                <button type="button" onClick={() => toggleSort(column.key)}>
-                  <span className="wide-only">{column.label}</span>
-                  <span className="narrow-only">{column.shortLabel ?? column.label}</span>
-                  {sortKey === column.key ? (ascending ? ' ▲' : ' ▼') : ''}
-                </button>
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {sorted.map((trip) => (
-            <tr
-              key={trip.id}
-              className="clickable"
-              onClick={() => onSelect(trip.id)}
-              // Rows are interactive, so they need to be reachable and activatable
-              // without a mouse.
-              tabIndex={0}
-              role="button"
-              aria-label={`Details for trip on ${formatDateTime(trip.start_date)}`}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' || event.key === ' ') {
-                  event.preventDefault();
-                  onSelect(trip.id);
-                }
-              }}
-            >
+    <section className="archive">
+      <div className="list-header">
+        <h2 className="section-title">Every trip</h2>
+        {/* "loaded", not "archived": the trip fetch is capped too, so this counts what
+            the page holds and can page through, not the whole archive. */}
+        <span className="list-count">
+          {trips.length} trip{trips.length === 1 ? '' : 's'}
+          {filtered ? ' in range' : ' loaded'}
+        </span>
+      </div>
+
+      <div className="table-wrap">
+        <table aria-label="Trip archive">
+          <thead>
+            <tr>
               {COLUMNS.map((column) => (
-                <td
+                <th
                   key={column.key}
-                  className={
-                    [column.key === 'start_date' ? 'left' : '', column.optional ? 'optional' : '']
-                      .filter(Boolean)
-                      .join(' ') || undefined
-                  }
+                  scope="col"
+                  className={column.optional ? 'optional' : undefined}
                 >
-                  {column.render(trip)}
-                </td>
+                  <button type="button" onClick={() => toggleSort(column.key)}>
+                    <span className="wide-only">{column.label}</span>
+                    <span className="narrow-only">{column.shortLabel ?? column.label}</span>
+                    {sortKey === column.key ? (ascending ? ' ▲' : ' ▼') : ''}
+                  </button>
+                </th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {pager.visible.map((trip) => (
+              <tr
+                key={trip.id}
+                className="clickable"
+                onClick={() => onSelect(trip.id)}
+                // Rows are interactive, so they need to be reachable and activatable
+                // without a mouse.
+                tabIndex={0}
+                role="button"
+                aria-label={`Details for trip on ${formatDateTime(trip.start_date)}`}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    onSelect(trip.id);
+                  }
+                }}
+              >
+                {COLUMNS.map((column) => (
+                  <td
+                    key={column.key}
+                    className={
+                      [
+                        column.key === 'start_date' ? 'left' : '',
+                        column.optional ? 'optional' : '',
+                      ]
+                        .filter(Boolean)
+                        .join(' ') || undefined
+                    }
+                  >
+                    {column.render(trip)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <Pager {...pager} label="Trip pages" />
+    </section>
   );
 }
