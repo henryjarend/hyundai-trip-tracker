@@ -10,6 +10,9 @@
     <meta name="color-scheme" content="light dark" />
     <meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#14171b" media="(prefers-color-scheme: dark)" />
+    <!-- Vite copies web/public/ to the root of dist/, which is what the API serves, so
+         this same path holds in the dev server and in the container. -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>Ioniq 5 Trip History</title>
   </head>
   <body>

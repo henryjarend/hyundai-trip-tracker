@@ -1,0 +1,6 @@
+<!-- The emoji as text rather than drawn paths, so the icon is the platform's own car
+     glyph and the file stays a few hundred bytes. dominant-baseline is unreliable at
+     favicon sizes, so the glyph is placed with an explicit y instead. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <text x="50" y="82" font-size="88" text-anchor="middle">🚗</text>
+</svg>
