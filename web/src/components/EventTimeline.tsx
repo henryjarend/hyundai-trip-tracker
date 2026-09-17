@@ -9,6 +9,7 @@
  */
 import type { VehicleEvent } from '../api.ts';
 import { formatDateTime, formatNumber, formatRelative } from '../format.ts';
+import { Pager, usePager } from './Pager.tsx';
 
 interface Props {
   events: VehicleEvent[];
@@ -42,6 +43,10 @@ function describe(event: VehicleEvent): string | null {
 }
 
 export function EventTimeline({ events }: Props) {
+  // The API already returns these newest-first, and there is no sort control here, so
+  // page 1 is the most recent handful.
+  const pager = usePager(events);
+
   if (events.length === 0) {
     return (
       <section className="events">
@@ -56,7 +61,14 @@ export function EventTimeline({ events }: Props) {
 
   return (
     <section className="events">
-      <h2 className="section-title">Recent activity</h2>
+      <div className="list-header">
+        <h2 className="section-title">Recent activity</h2>
+        {/* "loaded", not "on record": the fetch is capped, so this is how many the page
+            holds and can page through, not how many the archive contains. */}
+        <span className="list-count">
+          {events.length} event{events.length === 1 ? '' : 's'} loaded
+        </span>
+      </div>
       <p className="section-note">
         Inferred by comparing consecutive status readings, so the timing follows the car's
         own sync schedule rather than the poll interval. A short trip that starts and ends
@@ -64,7 +76,7 @@ export function EventTimeline({ events }: Props) {
       </p>
 
       <ul className="timeline">
-        {events.map((event) => {
+        {pager.visible.map((event) => {
           const lag = detectionLagMinutes(event);
           const detail = describe(event);
           const at = event.observed_at ?? event.detected_at;
@@ -95,6 +107,8 @@ export function EventTimeline({ events }: Props) {
           );
         })}
       </ul>
+
+      <Pager {...pager} label="Activity pages" />
     </section>
   );
 }

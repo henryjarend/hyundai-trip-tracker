@@ -221,6 +221,6 @@ export function fetchPositions(vin: string | null, limit = 1): Promise<{ positio
   return get(`/api/positions?${withVin(vin, { limit: String(limit) })}`);
 }
 
-export function fetchEvents(vin: string | null, limit = 25): Promise<{ events: VehicleEvent[] }> {
+export function fetchEvents(vin: string | null, limit = 100): Promise<{ events: VehicleEvent[] }> {
   return get(`/api/events?${withVin(vin, { limit: String(limit) })}`);
 }
