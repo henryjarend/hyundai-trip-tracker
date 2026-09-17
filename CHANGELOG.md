@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/henryjarend/hyundai-trip-tracker/compare/v1.2.0...v1.3.0) (2026-09-17)
+
+
+### Features
+
+* page the trip archive and the activity timeline ([5f8da8f](https://github.com/henryjarend/hyundai-trip-tracker/commit/5f8da8f955416ea4fd7d3411f4df58e61cf610d7))
+
 ## [1.2.0](https://github.com/henryjarend/hyundai-trip-tracker/compare/v1.1.0...v1.2.0) (2026-08-24)
 
 
