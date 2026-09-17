@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/henryjarend/hyundai-trip-tracker/compare/v1.3.0...v1.4.0) (2026-09-17)
+
+
+### Features
+
+* add a car favicon ([fc4a72b](https://github.com/henryjarend/hyundai-trip-tracker/commit/fc4a72b18a3b24124bdfd93d88c8dcc71215a4e5))
+
 ## [1.3.0](https://github.com/henryjarend/hyundai-trip-tracker/compare/v1.2.0...v1.3.0) (2026-09-17)
 
 
