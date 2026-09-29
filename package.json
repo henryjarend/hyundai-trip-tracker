@@ -15,7 +15,7 @@
     "dev:web": "npm run -w web dev",
     "build": "npm run -w web build && npm run -w server build",
     "typecheck": "npm run -w server typecheck && npm run -w web typecheck",
-    "test": "npm run -w server test",
+    "test": "npm run -w server test && npm run -w web test",
     "stack:up": "podman-compose down --remove-orphans || true && podman-compose up -d --build",
     "stack:down": "podman-compose down --remove-orphans",
     "stack:logs": "podman-compose logs -f poller",
