@@ -21,6 +21,7 @@ import type {
 import { EventTimeline } from './components/EventTimeline.tsx';
 import { LiveStatus } from './components/LiveStatus.tsx';
 import { RangeFilter } from './components/RangeFilter.tsx';
+import { SpeedEfficiency } from './components/SpeedEfficiency.tsx';
 import { StatTiles } from './components/StatTiles.tsx';
 import { TripTable } from './components/TripTable.tsx';
 import { TripModal } from './components/TripModal.tsx';
@@ -223,6 +224,10 @@ export function App() {
       <RangeFilter range={range} resolved={fetchedWindow} onChange={setRange} />
 
       <StatTiles summary={summary} />
+
+      {/* Built from the loaded trips rather than a stats endpoint: the page already holds
+          them, and the bands follow the range filter for free. */}
+      {!loading && <SpeedEfficiency trips={trips} totalTrips={summary?.trip_count ?? null} />}
 
       {loading ? (
         <p className="empty">Loading…</p>

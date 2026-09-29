@@ -124,6 +124,57 @@ select {
   font-variant-numeric: tabular-nums;
 }
 
+/* --- Efficiency by average speed ---
+   The same tiles as the totals above, so the section reads as more of the summary
+   rather than as a chart bolted on. Each tile carries a thin bar on a shared
+   zero-based scale; the number stays the reading, the bar is for comparing at a
+   glance. */
+
+.speed {
+  margin-bottom: 28px;
+}
+
+.speed-headline {
+  margin: 0 0 12px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.speed-tiles {
+  margin-bottom: 10px;
+}
+
+.tile-unit {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.speed-bar {
+  height: 6px;
+  margin: 10px 0 8px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.speed-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  /* Ink, not the accent: DESIGN.md keeps the blue for what is interactive, selected
+     or moving, and a bar is none of those. */
+  background: var(--text);
+}
+
+/* Too few miles to trust: the value stays legible, but steps back from the others. */
+.speed-thin .tile-value {
+  color: var(--muted);
+}
+
+.speed-thin .speed-bar-fill {
+  background: var(--muted);
+}
+
 /* No `overflow` here, deliberately. Setting overflow-x makes overflow-y compute to auto
    as well, which turns this into a scroll container with no height limit — and the
    sticky column headers below then stick to a box that never scrolls, so they never
