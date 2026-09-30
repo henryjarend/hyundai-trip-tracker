@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/henryjarend/hyundai-trip-tracker/compare/v1.4.0...v1.5.0) (2026-09-29)
+
+
+### Features
+
+* show efficiency by average speed ([b86583a](https://github.com/henryjarend/hyundai-trip-tracker/commit/b86583aec5f55289d7391165977a987b8db1337d))
+
 ## [1.4.0](https://github.com/henryjarend/hyundai-trip-tracker/compare/v1.3.0...v1.4.0) (2026-09-17)
 
 
