@@ -23,7 +23,7 @@ jobs:
       # Installs the Node in mise.toml, so CI and a developer's machine cannot end up
       # on different majors — which for this repo would mean CI silently testing
       # against a runtime that cannot strip types.
-      - uses: jdx/mise-action@v4
+      - uses: jdx/mise-action@v5
 
       - run: npm ci
 
