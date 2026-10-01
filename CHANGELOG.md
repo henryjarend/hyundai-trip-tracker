@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.6.0](https://github.com/henryjarend/hyundai-trip-tracker/compare/v1.5.0...v1.6.0) (2026-10-01)
+
+
+### Features
+
+* filter the trip list by speed band ([e118f74](https://github.com/henryjarend/hyundai-trip-tracker/commit/e118f740c46324c946f38f95841cdd7918af0b1d))
+* filter the trip list by speed band ([7803ed0](https://github.com/henryjarend/hyundai-trip-tracker/commit/7803ed0226c781228e4ac88ecb078a46eefee93e))
+
 ## [1.5.0](https://github.com/henryjarend/hyundai-trip-tracker/compare/v1.4.0...v1.5.0) (2026-09-29)
 
 
