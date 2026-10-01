@@ -68,9 +68,12 @@ interface Props {
    * fine and they simply picked "12h" would send them debugging the wrong thing.
    */
   filtered: boolean;
+  /** The label of the speed band narrowing the list, when one is selected above. */
+  speedBand: string | null;
+  onClearSpeedBand: () => void;
 }
 
-export function TripTable({ trips, onSelect, filtered }: Props) {
+export function TripTable({ trips, onSelect, filtered, speedBand, onClearSpeedBand }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>('start_date');
   const [ascending, setAscending] = useState(false);
 
@@ -107,6 +110,19 @@ export function TripTable({ trips, onSelect, filtered }: Props) {
     }
   }
 
+  // Reachable when the time range changes under a selected band and leaves it empty;
+  // the card itself can't be pressed while its band holds no trips.
+  if (trips.length === 0 && speedBand !== null) {
+    return (
+      <p className="empty">
+        No trips at {speedBand} in this time range.{' '}
+        <button type="button" className="link" onClick={onClearSpeedBand}>
+          Show every trip
+        </button>
+      </p>
+    );
+  }
+
   if (trips.length === 0) {
     return (
       <p className="empty">
@@ -120,12 +136,24 @@ export function TripTable({ trips, onSelect, filtered }: Props) {
   return (
     <section className="archive">
       <div className="list-header">
-        <h2 className="section-title">Every trip</h2>
+        <h2 className="section-title">
+          {speedBand === null ? 'Every trip' : `Trips at ${speedBand}`}
+        </h2>
         {/* "loaded", not "archived": the trip fetch is capped too, so this counts what
             the page holds and can page through, not the whole archive. */}
         <span className="list-count">
           {trips.length} trip{trips.length === 1 ? '' : 's'}
           {filtered ? ' in range' : ' loaded'}
+          {/* Stated in the header, not only by the pressed card, because on a phone the
+              cards are a screen above and the narrowed list would pass for the archive. */}
+          {speedBand !== null && (
+            <>
+              {' · '}
+              <button type="button" className="link" onClick={onClearSpeedBand}>
+                Show every trip
+              </button>
+            </>
+          )}
         </span>
       </div>
 

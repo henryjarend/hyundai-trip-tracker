@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   fetchEvents,
   fetchLatestStatus,
@@ -26,6 +26,7 @@ import { StatTiles } from './components/StatTiles.tsx';
 import { TripTable } from './components/TripTable.tsx';
 import { TripModal } from './components/TripModal.tsx';
 import { formatDateTime } from './format.ts';
+import { BANDS, bandOf } from './speed-bands.ts';
 import { DEFAULT_RANGE, resolveRange, type Range, type ResolvedRange } from './range.ts';
 
 /**
@@ -64,6 +65,18 @@ export function App() {
    * trip list is filtered. The tiles below are about the selection; this line is not.
    */
   const [archiveStart, setArchiveStart] = useState<string | null>(null);
+  /**
+   * The speed band the trip list is narrowed to. It survives a change of time range on
+   * purpose: the bands are fixed speeds, so "20–35 mph over the last week" is a fair
+   * follow-up to "20–35 mph over everything".
+   */
+  const [speedBand, setSpeedBand] = useState<number | null>(null);
+  // Memoized so the list keeps its identity between renders: the pager resets to page 1
+  // whenever it sees a new array, and that should mean a new selection, not a re-render.
+  const listedTrips = useMemo(
+    () => (speedBand === null ? trips : trips.filter((trip) => bandOf(trip) === speedBand)),
+    [trips, speedBand],
+  );
 
   useEffect(() => {
     // A poller that is failing looks identical to an empty archive. Surface it.
@@ -227,14 +240,23 @@ export function App() {
 
       {/* Built from the loaded trips rather than a stats endpoint: the page already holds
           them, and the bands follow the range filter for free. */}
-      {!loading && <SpeedEfficiency trips={trips} totalTrips={summary?.trip_count ?? null} />}
+      {!loading && (
+        <SpeedEfficiency
+          trips={trips}
+          totalTrips={summary?.trip_count ?? null}
+          selected={speedBand}
+          onSelect={setSpeedBand}
+        />
+      )}
 
       {loading ? (
         <p className="empty">Loading…</p>
       ) : (
         <TripTable
-          trips={trips}
+          trips={listedTrips}
           onSelect={setSelectedTripId}
+          speedBand={speedBand === null ? null : BANDS[speedBand]!.label}
+          onClearSpeedBand={() => setSpeedBand(null)}
           filtered={fetchedWindow.from !== undefined || fetchedWindow.to !== undefined}
         />
       )}

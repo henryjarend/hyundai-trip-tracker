@@ -56,6 +56,23 @@ export interface SpeedBreakdown {
 }
 
 /**
+ * Which band a trip counts toward, or null when it counts toward none: Hyundai sent no
+ * average speed, or no energy to divide by.
+ *
+ * The one place membership is decided, so a card that says "5 trips" lists exactly
+ * those five when it is selected — the breakdown and the trip filter cannot drift.
+ */
+export function bandOf(trip: Trip): number | null {
+  const speed = trip.avg_speed;
+  if (speed === null || !Number.isFinite(speed) || trip.energy_total_wh <= 0) return null;
+  const index = BANDS.findIndex(
+    (band) => speed >= band.min && (band.max === null || speed < band.max),
+  );
+  // Only a negative speed misses every band, and that is not a speed.
+  return index === -1 ? null : index;
+}
+
+/**
  * Efficiency is total miles over total kWh within a band, never the mean of per-trip
  * mi/kWh. A two-block trip with a cold cabin can read 1.2 mi/kWh and a plain average
  * would let it outweigh a forty-mile drive; weighting by energy is also what the
@@ -66,16 +83,8 @@ export function speedBreakdown(trips: readonly Trip[]): SpeedBreakdown {
   let skipped = 0;
 
   for (const trip of trips) {
-    const speed = trip.avg_speed;
-    if (speed === null || !Number.isFinite(speed) || trip.energy_total_wh <= 0) {
-      skipped += 1;
-      continue;
-    }
-    const index = BANDS.findIndex(
-      (band) => speed >= band.min && (band.max === null || speed < band.max),
-    );
-    // Only a negative speed misses every band, and that is not a speed.
-    if (index === -1) {
+    const index = bandOf(trip);
+    if (index === null) {
       skipped += 1;
       continue;
     }
