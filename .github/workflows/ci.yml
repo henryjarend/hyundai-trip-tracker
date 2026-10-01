@@ -33,6 +33,25 @@ jobs:
       # Postgres is unreachable, which is exactly the case here.
       - run: npm test
 
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      # The whole history, not the default single commit: a secret deleted in a later
+      # commit is still public in the one that added it.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # Only the scanner. Node is the other job's business.
+      - uses: jdx/mise-action@v5
+        with:
+          install_args: github:betterleaks/betterleaks
+
+      # Redacted because this log is public: a leak reported in full here would be a
+      # second leak. False positives are filtered in .betterleaks.toml. Live validation
+      # stays off, so no candidate secret is ever sent to a third-party API.
+      - run: betterleaks git . --redact --no-banner -v
+
   image:
     # Builds without pushing, so a broken Dockerfile surfaces on the pull request. At
     # release time the only way to fix one is another release.
