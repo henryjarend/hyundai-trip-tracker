@@ -1,0 +1,26 @@
+# Secret scanning for this repository, run by CI over the full git history.
+#
+# The default rules stay on; this only discards the handful of values that look like
+# credentials and are not. Each is matched by its exact value rather than by path, so a
+# real secret committed next to one of them is still caught.
+title = "hyundai-trip-tracker"
+
+filter = '''
+// The stock postgres:postgres login of the local and compose database. It only ever
+// guards a container on this machine, and it is documented in the README as such.
+finding["secret"] == "postgres"
+
+// The MyHyundai Android app's own OAuth client secret, sent verbatim in
+// server/src/hyundai/headers.ts. It ships inside the app and is published by every
+// Bluelink client (bluelinky, BetterBlueKit, evcc, openHAB); it identifies the app,
+// not an account.
+|| finding["secret"] == "v558o935-6nne-423i-baa8"
+
+// Placeholders: the example env file, and the fake login the client tests use.
+|| (attributes["path"] == ".env.example" && finding["secret"] == "your-bluelink-password")
+|| (filter.matchesAny(attributes["path"], [`^server/test/`]) && finding["secret"] == "hunter2")
+'''
+
+# Last on purpose: every key written after a [table] header belongs to that table.
+[extend]
+useDefault = true

@@ -201,6 +201,18 @@ Three workflows' worth of behaviour, all from off-the-shelf actions:
 the PR, because at release time the only fix is another release. No credentials are
 needed; the geocoding tests skip themselves when Postgres is unreachable.
 
+It also scans the **whole git history** for secrets with
+[Betterleaks](https://github.com/betterleaks/betterleaks), pinned in `mise.toml`. A
+secret deleted in a later commit is still readable in the one that added it, so the scan
+covers every commit, not just the diff. Findings are redacted in the log, and live
+validation stays off. The few values that look like credentials but aren't (the stock
+`postgres:postgres` login, the MyHyundai app's public client secret, test placeholders)
+are filtered by exact value in `.betterleaks.toml`. To run the same scan locally:
+
+```bash
+mise x -- betterleaks git . --redact
+```
+
 **Every push to main** updates a release pull request
 ([release-please](https://github.com/googleapis/release-please)) listing the
 conventional-commit subjects accumulated since the last release. That PR is the release:

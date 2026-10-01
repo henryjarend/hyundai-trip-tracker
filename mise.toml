@@ -6,3 +6,8 @@
 # same major (node:26-alpine) and has to be moved with this.
 [tools]
 node = "26"
+
+# Secret scanner, run over the whole git history by CI's `secrets` job and locally with
+# `betterleaks git . --redact`. Pinned exactly: a new release can add rules, and a CI
+# failure should mean a new commit leaked something, not that the scanner changed.
+"github:betterleaks/betterleaks" = "1.9.0"
