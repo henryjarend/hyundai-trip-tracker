@@ -6,6 +6,10 @@ interface Props {
   trips: Trip[];
   /** How many trips the selected window holds, which the loaded list can fall short of. */
   totalTrips: number | null;
+  /** Index into BANDS of the band the trip list is narrowed to, or null for none. */
+  selected: number | null;
+  /** Called with the band to narrow to, or null to show every trip again. */
+  onSelect: (band: number | null) => void;
 }
 
 function percentFrom(value: number, base: number): string {
@@ -34,7 +38,7 @@ function headline(bands: SpeedBand[]): string | null {
   );
 }
 
-export function SpeedEfficiency({ trips, totalTrips }: Props) {
+export function SpeedEfficiency({ trips, totalTrips, selected, onSelect }: Props) {
   const { bands, overallMilesPerKwh, skipped } = speedBreakdown(trips);
   const populated = bands.filter((band) => band.milesPerKwh !== null);
   if (populated.length === 0) return null;
@@ -59,39 +63,48 @@ export function SpeedEfficiency({ trips, totalTrips }: Props) {
       {summary && <p className="speed-headline">{summary}</p>}
 
       <div className="tiles speed-tiles">
-        {bands.map((band) => {
+        {bands.map((band, index) => {
           const width = band.milesPerKwh === null ? 0 : (band.milesPerKwh / scaleMax) * 100;
           const volume =
             band.tripCount === 0
               ? 'no trips'
               : `${band.tripCount} trip${band.tripCount === 1 ? '' : 's'} · ${formatNumber(band.miles, 0)} mi`;
+          const pressed = selected === index;
           return (
-            <div
-              className={`tile speed-tile${band.thin ? ' speed-thin' : ''}`}
+            // A toggle button rather than a link or a tab: it narrows the list below
+            // and pressing it again undoes that, which is exactly what aria-pressed says.
+            <button
+              type="button"
+              className={`tile speed-tile${band.thin ? ' speed-thin' : ''}${pressed ? ' selected' : ''}`}
               key={band.label}
+              aria-pressed={pressed}
+              // An empty band would only narrow the list to nothing.
+              disabled={band.tripCount === 0}
+              onClick={() => onSelect(pressed ? null : index)}
               title={
                 band.milesPerKwh === null
                   ? undefined
-                  : `${formatNumber(band.miles, 1)} mi on ${formatNumber(band.kwh, 1)} kWh`
+                  : `${formatNumber(band.miles, 1)} mi on ${formatNumber(band.kwh, 1)} kWh · ` +
+                    (pressed ? 'click to show every trip' : 'click to list only these trips')
               }
             >
-              <div className="tile-label">{band.label}</div>
-              <div className="tile-value">
+              <span className="tile-label">{band.label}</span>
+              <span className="tile-value">
                 {band.milesPerKwh === null ? '—' : formatNumber(band.milesPerKwh, 2)}
                 {band.milesPerKwh !== null && <span className="tile-unit"> mi/kWh</span>}
-              </div>
-              <div className="speed-bar" aria-hidden="true">
-                <div className="speed-bar-fill" style={{ width: `${width}%` }} />
-              </div>
-              <div className="tile-hint">{volume}</div>
+              </span>
+              <span className="speed-bar" aria-hidden="true">
+                <span className="speed-bar-fill" style={{ width: `${width}%` }} />
+              </span>
+              <span className="tile-hint">{volume}</span>
               {band.milesPerKwh !== null && overallMilesPerKwh !== null && (
-                <div className="tile-hint">
+                <span className="tile-hint">
                   {band.thin
                     ? `under ${THIN_MILES} mi — too little to judge`
                     : percentFrom(band.milesPerKwh, overallMilesPerKwh)}
-                </div>
+                </span>
               )}
-            </div>
+            </button>
           );
         })}
       </div>
@@ -101,6 +114,7 @@ export function SpeedEfficiency({ trips, totalTrips }: Props) {
         highway run with a slow start can land a band lower than the road suggests. Each
         band's value is its total miles over its total kWh. Speed isn't the only lever:
         climate and a cold battery weigh heaviest on short, slow trips.
+        Select a band to list only its trips below.
       </p>
     </section>
   );

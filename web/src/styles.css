@@ -166,6 +166,54 @@ select {
   background: var(--text);
 }
 
+/* The cards are toggle buttons that narrow the trip list, so they shed the button
+   chrome and keep the tile's. Selected reads the same as the active range chip — the
+   accent is for what is selected, and these are. */
+.speed-tile {
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Spans, because a button may only hold phrasing content; laid out as the tile's divs. */
+.speed-tile > span,
+.speed-bar-fill {
+  display: block;
+}
+
+@media (hover: hover) {
+  .speed-tile:not(:disabled):not(.selected):hover {
+    border-color: var(--muted);
+  }
+}
+
+.speed-tile.selected {
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+
+.speed-tile.selected .tile-label {
+  color: var(--accent-ink);
+}
+
+.speed-tile:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.speed-tile:disabled {
+  cursor: default;
+}
+
+/* Inline beside a count or inside a sentence, where the link's own top margin and
+   size would knock it off the line. */
+.list-count .link,
+.empty .link {
+  margin-top: 0;
+  font-size: inherit;
+}
+
 /* Too few miles to trust: the value stays legible, but steps back from the others. */
 .speed-thin .tile-value {
   color: var(--muted);

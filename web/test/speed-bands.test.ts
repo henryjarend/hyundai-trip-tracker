@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { Trip } from '../src/api.ts';
-import { speedBreakdown } from '../src/speed-bands.ts';
+import { bandOf, speedBreakdown } from '../src/speed-bands.ts';
 
 function trip(avg_speed: number | null, distance_miles: number, energy_total_wh: number): Trip {
   return {
@@ -50,4 +50,13 @@ test('a band with few miles is marked thin, an empty one has no value', () => {
   assert.equal(bands[0]!.thin, true);
   assert.equal(bands[2]!.thin, false);
   assert.equal(bands[4]!.milesPerKwh, null);
+});
+
+test('each band counts exactly the trips bandOf files under it', () => {
+  // Includes the trips the breakdown skips, which the trip filter must skip too.
+  const trips = [trip(10, 3, 1000), trip(30, 8, 2000), trip(30, 8, 0), trip(null, 4, 900), trip(70, 40, 13_000)];
+  const { bands } = speedBreakdown(trips);
+  bands.forEach((band, index) => {
+    assert.equal(trips.filter((t) => bandOf(t) === index).length, band.tripCount);
+  });
 });
