@@ -79,7 +79,9 @@ npm run geonames:load
 
 It downloads the GeoNames `cities500` dataset (~235k places with population ≥ 500) and
 loads it into Postgres. Until you do, locations still show as coordinates and still link
-to a map; only the names are missing. Re-run occasionally to refresh the data.
+to a map; only the names are missing. Re-run occasionally to refresh the data. The place names
+come from [GeoNames](https://www.geonames.org/), licensed under
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 
 **Your coordinates never leave the machine.** Reverse geocoding is a spatial query
 against that local table using Postgres's `earthdistance` extension — no geocoding
@@ -371,3 +373,8 @@ that happened while the poller was down, have no locations and never will. Every
 locations depend on is described under [the odometer is what ties a fix to a
 trip](#the-odometer-is-what-ties-a-fix-to-a-trip); the practical consequence is that
 uptime, not `POLL_INTERVAL_MINUTES`, is what fills them in.
+
+## License
+
+[MIT](LICENSE). The Bluelink client is ported from BetterBlueKit, also MIT; its notice
+is in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
