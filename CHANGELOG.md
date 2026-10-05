@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.1](https://github.com/henryjarend/hyundai-trip-tracker/compare/v1.6.0...v1.6.1) (2026-10-05)
+
+
+### Bug Fixes
+
+* **docs:** add screenshot to README ([#28](https://github.com/henryjarend/hyundai-trip-tracker/issues/28)) ([f6ef908](https://github.com/henryjarend/hyundai-trip-tracker/commit/f6ef90824cc04e33b9409cb2376bf23d9ef3b620))
+
 ## [1.6.0](https://github.com/henryjarend/hyundai-trip-tracker/compare/v1.5.0...v1.6.0) (2026-10-01)
 
 
