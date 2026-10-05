@@ -7,6 +7,9 @@ in Postgres, and serves the archive as a web page.
 History accumulates from the day you start the poller. Trips Hyundai has already dropped
 are gone — there is no backfill.
 
+## Screenshot
+![screenshot of webpage with data loaded](docs/image.png)
+
 ## How it works
 
 A poller logs in to Bluelink every `POLL_INTERVAL_MINUTES`, reads the ~4 trips currently
