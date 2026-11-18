@@ -29,7 +29,7 @@ npm run api                   # API + built frontend on :3000
 npm run dev:web               # Vite dev server on :5173, proxies /api to :3000
 ```
 
-Tests and checks (no credentials or database needed; geocoding tests skip when GeoNames isn't loaded):
+Tests and checks (no credentials or database needed; geocoding tests skip when GeoNames isn't loaded, and `server/test/coverage-db.test.ts` skips unless a local Postgres answers — its header has the throwaway-container command):
 
 ```bash
 npm test                                    # server workspace, node --test
