@@ -50,7 +50,9 @@ jobs:
       # Redacted because this log is public: a leak reported in full here would be a
       # second leak. False positives are filtered in .betterleaks.toml. Live validation
       # stays off, so no candidate secret is ever sent to a third-party API.
-      - run: betterleaks git . --redact --no-banner -v
+      # --config is required: since 1.10.0 Betterleaks no longer loads
+      # .betterleaks.toml on its own, and without it every filtered value fails the job.
+      - run: betterleaks git . --config .betterleaks.toml --redact --no-banner -v
 
   image:
     # Builds without pushing, so a broken Dockerfile surfaces on the pull request. At
