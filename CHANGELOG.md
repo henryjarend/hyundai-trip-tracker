@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.7.0](https://github.com/henryjarend/hyundai-trip-tracker/compare/v1.6.0...v1.7.0) (2026-11-18)
+
+
+### Features
+
+* measure trip coverage against the car's odometer ([#33](https://github.com/henryjarend/hyundai-trip-tracker/issues/33)) ([8eae4e0](https://github.com/henryjarend/hyundai-trip-tracker/commit/8eae4e0cf9f6fa013fa2644aa1fe26cc9b2316af))
+
+
+### Bug Fixes
+
+* **docs:** add screenshot to README ([#28](https://github.com/henryjarend/hyundai-trip-tracker/issues/28)) ([f6ef908](https://github.com/henryjarend/hyundai-trip-tracker/commit/f6ef90824cc04e33b9409cb2376bf23d9ef3b620))
+
 ## [1.6.0](https://github.com/henryjarend/hyundai-trip-tracker/compare/v1.5.0...v1.6.0) (2026-10-01)
 
 
