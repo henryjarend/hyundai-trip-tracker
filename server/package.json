@@ -21,7 +21,7 @@
     "undici": "^8.0.0"
   },
   "devDependencies": {
-    "@types/node": "^24.0.0",
+    "@types/node": "^26.0.0",
     "@types/pg": "^8.11.0",
     "@types/pg-copy-streams": "^1.2.5",
     "typescript": "^7.0.0"
