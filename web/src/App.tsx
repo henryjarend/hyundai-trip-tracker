@@ -236,7 +236,12 @@ export function App() {
 
       <RangeFilter range={range} resolved={fetchedWindow} onChange={setRange} />
 
-      <StatTiles summary={summary} />
+      {/* fetchedWindow is set alongside summary, so the scope always describes the
+          totals on screen rather than a range still loading. */}
+      <StatTiles
+        summary={summary}
+        filtered={fetchedWindow.from !== undefined || fetchedWindow.to !== undefined}
+      />
 
       {/* Built from the loaded trips rather than a stats endpoint: the page already holds
           them, and the bands follow the range filter for free. */}

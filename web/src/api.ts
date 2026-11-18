@@ -38,6 +38,46 @@ export interface Summary {
   first_trip_at: string | null;
   last_trip_at: string | null;
   avg_miles_per_kwh: number | null;
+  coverage: Coverage;
+}
+
+/** Driving the odometer shows between two archived trips that no trip accounts for. */
+export interface CoverageGap {
+  vin: string;
+  after_trip_id: number;
+  before_trip_id: number;
+  from_odometer_miles: number;
+  to_odometer_miles: number;
+  miles: number;
+}
+
+/**
+ * How many of the miles on the car's odometer the archive accounts for. Over the whole
+ * archive that is every mile from 0 to the current reading; over a date range, the
+ * miles between the readings at its ends. Tracked miles are measured by odometer too,
+ * so Hyundai's whole-mile trip distances don't read as misses.
+ */
+export interface Coverage {
+  /** Odometer at the window's start: 0 for the whole archive. Null across vehicles. */
+  odometer_start_miles: number | null;
+  /** Odometer at the window's end: the current reading if open-ended. Null across vehicles. */
+  odometer_end_miles: number | null;
+  /** What the car drove in the window by its odometer: the reference. */
+  odometer_miles: number;
+  /** The part inside an archived trip. */
+  tracked_miles: number;
+  /** The rest, which is the three below added together. */
+  untracked_miles: number;
+  /** Before the first archived trip; for the whole archive, before tracking began. */
+  before_first_trip_miles: number;
+  /** In gaps between archived trips. */
+  missed_miles: number;
+  /** After the last archived trip: on the odometer, not yet published as a trip. */
+  after_last_trip_miles: number;
+  /** tracked / odometer; null when the car didn't move. */
+  ratio: number | null;
+  gaps: CoverageGap[];
+  trips_without_odometer: number;
 }
 
 async function get<T>(path: string): Promise<T> {

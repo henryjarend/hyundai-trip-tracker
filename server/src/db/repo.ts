@@ -2,6 +2,7 @@
 import { query } from './pool.ts';
 import { nearestPlace } from '../geocode.ts';
 import { chooseBoundaryFix, EXACT_TOLERANCE_MILES, startOdometer } from '../trip-location.ts';
+import { combineCoverage, measureCoverage, type CoverageTrip } from '../coverage.ts';
 import type { Fix, FixSource, ResolvedFix } from '../trip-location.ts';
 import type {
   Trip,
@@ -746,7 +747,80 @@ export async function tripSummary(vin?: string, from?: string, to?: string) {
        AND ($3::timestamptz IS NULL OR start_date <= $3)`,
     [vin ?? null, from ?? null, to ?? null],
   );
-  return rows[0];
+  return { ...rows[0], coverage: await tripCoverage(vin, from, to) };
+}
+
+/**
+ * Coverage against the car's odometer for the same window as the summary. The gap
+ * rules live in coverage.ts so they stay unit-testable; SQL only gathers the trips and
+ * the odometer readings at the window's two ends. Even years of trips are a few
+ * thousand small rows.
+ */
+async function tripCoverage(vin?: string, from?: string, to?: string) {
+  const params = [vin ?? null, from ?? null, to ?? null];
+  const [trips, spans] = await Promise.all([
+    query<{
+      vin: string;
+      id: number;
+      odometer_miles: number | null;
+      distance_miles: number;
+      start_date: Date;
+    }>(
+      `SELECT vin, id, odometer_miles, distance_miles, start_date
+       FROM trips
+       WHERE ($1::text IS NULL OR vin = $1)
+         AND ($2::timestamptz IS NULL OR start_date >= $2)
+         AND ($3::timestamptz IS NULL OR start_date <= $3)`,
+      params,
+    ),
+    // Every odometer reading we hold, from trip ends and status snapshots alike. With no
+    // `from` the window is the car's whole life, so it starts at 0; with no `to` it ends
+    // at the newest reading, which can be ahead of the last trip Hyundai has published.
+    query<{ vin: string; start_miles: number | null; end_miles: number | null }>(
+      `WITH readings AS (
+         SELECT vin, odometer_miles AS miles,
+                start_date + make_interval(secs => duration_seconds) AS at
+         FROM trips WHERE odometer_miles IS NOT NULL
+         UNION ALL
+         SELECT vin, odometer_miles, synced_at
+         FROM vehicle_status_snapshots WHERE odometer_miles IS NOT NULL
+       )
+       SELECT v.vin,
+              CASE WHEN $2::timestamptz IS NULL THEN 0
+                   ELSE (SELECT max(r.miles) FROM readings r WHERE r.vin = v.vin AND r.at <= $2)
+              END AS start_miles,
+              CASE WHEN $3::timestamptz IS NULL
+                   THEN GREATEST(v.odometer_miles,
+                                 (SELECT max(r.miles) FROM readings r WHERE r.vin = v.vin))
+                   ELSE (SELECT max(r.miles) FROM readings r WHERE r.vin = v.vin AND r.at <= $3)
+              END AS end_miles
+       FROM vehicles v
+       WHERE ($1::text IS NULL OR v.vin = $1)`,
+      params,
+    ),
+  ]);
+
+  const byVin = new Map<string, CoverageTrip[]>();
+  for (const row of trips.rows) {
+    const list = byVin.get(row.vin) ?? [];
+    list.push({
+      id: row.id,
+      odometerMiles: row.odometer_miles,
+      distanceMiles: row.distance_miles,
+      startDate: row.start_date,
+    });
+    byVin.set(row.vin, list);
+  }
+
+  // Per vehicle, not per trip: a car that drove without one archived trip still counts.
+  return combineCoverage(
+    spans.rows.map((span) =>
+      measureCoverage(span.vin, byVin.get(span.vin) ?? [], {
+        startMiles: span.start_miles,
+        endMiles: span.end_miles,
+      }),
+    ),
+  );
 }
 
 export async function listStatusSnapshots(vin: string | undefined, limit: number) {

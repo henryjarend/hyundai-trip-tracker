@@ -168,7 +168,7 @@ frontend, so everything is on one port.
 | `GET /api/vehicles` | Enrolled vehicles with a trip count each |
 | `GET /api/trips` | Paginated trips, newest first — `vin`, `from`, `to`, `limit`, `offset` |
 | `GET /api/trips/:id` | One trip in full, plus `raw` and its start/end locations |
-| `GET /api/stats/summary` | Totals and average efficiency — same filters as `/api/trips` |
+| `GET /api/stats/summary` | Totals, average efficiency and `coverage`: how many of the odometer's miles (from 0, or across the range) fall inside an archived trip, with the rest split into before tracking, gaps and not yet reported — same filters as `/api/trips` |
 | `GET /api/status` | Recent vehicle status snapshots |
 | `GET /api/positions` | Recent GPS fixes from `findMyCar` |
 | `GET /api/events` | Inferred transitions — engine on/off, moved, charge, plug |
