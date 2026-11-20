@@ -1,6 +1,6 @@
 services:
   db:
-    image: docker.io/library/postgres:18-alpine
+    image: docker.io/library/postgres:19-alpine
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
